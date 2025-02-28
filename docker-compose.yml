@@ -11,3 +11,19 @@ services:
       context: ./frontend
     ports:
       - "80:80"
+
+  db: #NEW DATABASE
+  image: postgres:latest
+  environment:
+    POSTGRES_USER: ${DB_USER}
+    POSTGRES_PASSWORD: ${DB_PASSWORD}
+    POSTGRES_DB: ${DB_NAME}
+  
+  ports:
+    - "5432:5432"
+  restart: unless-stopped
+  volumes:
+   - desd-backup:/var/lib/postgresql/data
+
+volumes:
+  desd-backup:

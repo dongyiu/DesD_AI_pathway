@@ -15,6 +15,10 @@ The backend is built using Django and containerized with Docker. It uses Gunicor
 ### Dockerfile
 The backend Dockerfile is located at: `/backend/Dockerfile`.
 
+
+
+
+
 ### Usage
 
 1. Open your terminal and navigate to the `/backend` directory:
