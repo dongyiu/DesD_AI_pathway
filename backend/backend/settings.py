@@ -47,16 +47,30 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "DESD_App",
     "corsheaders",
+    "django_extensions",
+
 ]
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    # 'DEFAULT_PERMISSION_CLASSES': (
+    #     'rest_framework.permissions.IsAuthenticated',  # Only authenticated users can access [Project-level permission]
+    # ),
 }
 
+DJOSER = {
+    # Since we're using JWT, we don't need Djoser's token model.
+    'TOKEN_MODEL': None, 
+    'SERIALIZERS': {
+         'user_create': 'DESD_App.serializers.UserCreateSerializer',
+    },
+}
+
+
 SIMPLE_JWT = {
-    "AUTH_HEADER_TYPES": ("JWT",),
+    "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
 # Add after CORS_ALLOWED_ORIGINS
@@ -112,7 +126,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "backend.wsgi.application"
 
-AUTH_PROFILE_MODULE = 'accounts.UserProfile' #
+# AUTH_PROFILE_MODULE = 'accounts.UserProfile' #
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases

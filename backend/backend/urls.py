@@ -24,7 +24,7 @@ urlpatterns = [
 
     path("auth/",include("djoser.urls")),  #provided by djoser for Authentication purposes automatically
     path("auth/",include("djoser.urls.jwt")), #provided by djoser for Authentication purposes automatically especially for JWT authentication
-
+    path('api-auth/', include('rest_framework.urls')),
 ]
 
 """
@@ -47,7 +47,7 @@ POST /auth/token/login/ --> Obtain an Authentication token
 
 """
 ----------------------------------------------------------------
-for auth/ djoser.urls.jwt, the following end points:
+for auth/ djoser.urls.jwt, the following endpoints:
 
 POST /auth/jwt/create --> Creates a new stateless [JWT] token or refreshes the current token
 
