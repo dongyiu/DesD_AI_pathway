@@ -48,8 +48,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "DESD_App",
     "corsheaders",
-    "django_extensions",
-      "drf_yasg"
+    'drf_yasg'
 ]
 
 REST_FRAMEWORK = {
@@ -71,7 +70,7 @@ DJOSER = {
 
 
 SIMPLE_JWT = {
-    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_HEADER_TYPES": ("JWT",),
 }
 
 # Add after CORS_ALLOWED_ORIGINS

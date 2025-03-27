@@ -3,6 +3,7 @@ from rest_framework import serializers
 from djoser.serializers import UserCreateSerializer as BaseUserCreateSerializer
 from django.contrib.auth import get_user_model
 from .models import *
+from .models import UserProfile
 from django.contrib.auth.models import Group
 
 User = get_user_model()
@@ -56,7 +57,23 @@ class UserCreateSerializer(serializers.ModelSerializer):
             user.groups.add(group)
 
         return user
-    
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    daily_calories = serializers.SerializerMethodField()
+    bmr = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserProfile
+        fields = ['id', 'phone_number', 'age', 'height', 'weight', 'activity_level', 
+                 'gender', 'target_weight', 'medical_conditions', 'fitness_goals',
+                 'daily_calories', 'bmr']
+        
+    def get_daily_calories(self, obj):
+        return obj.calculate_daily_calories()
+        
+    def get_bmr(self, obj):
+        return obj.calculate_bmr()
+
 
     def update(self, instance, validated_data):
         group_name = validated_data.pop('group', None)
