@@ -121,8 +121,8 @@ useEffect(() => {
 
   return (
     <div className={`fixed inset-0 ${isDarkMode 
-        ? 'bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100' 
-        : 'bg-gradient-to-br from-indigo-50 to-purple-100 text-gray-900'
+        ? 'bg-gradient-to-br from-gray-800 to-indigo-500 text-gray-100' 
+        : 'bg-gradient-to-br from-gray-100 to-indigo-500 text-gray-900'
       } transition-colors duration-300 overflow-y-auto flex items-center justify-center p-4`}>
       {/* Dark Mode Toggle */}
       <button 
@@ -318,6 +318,18 @@ useEffect(() => {
               {isLogin 
                 ? 'Need an account? Sign Up' 
                 : 'Already have an account? Log In'}
+            </button>
+          </div>
+          <div className="text-center mt-4">
+            <button 
+              onClick={()=>navigate("/")}
+              className={`hover:underline ${
+                isDarkMode 
+                  ? 'text-purple-400 hover:text-purple-300' 
+                  : 'text-blue-600 hover:text-blue-500'
+                }`}
+            >
+              Return Home
             </button>
           </div>
         </div>
