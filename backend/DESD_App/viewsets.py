@@ -7,8 +7,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from .serializers import *
 from .models import User, UserProfile
-from .serializers import UserProfileSerializer
-from rest_framework.permissions import IsAdminUser,IsAuthenticated
+from .serializers import UserProfileSerializer, UserCreateSerializer
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from .permissions import IsOwner
 from rest_framework import generics
 from rest_framework.response import Response
@@ -104,4 +104,31 @@ class StreamViewSet(viewsets.ViewSet):
         except Exception as e:
             print(f"Error generating token: {str(e)}")
             return Response({"error": "Failed to generate token"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class UserProfileViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for user profiles
+    """
+    serializer_class = UserProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        This view returns the profile for the currently authenticated user
+        """
+        return UserProfile.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        """
+        Create a new profile for the authenticated user
+        """
+        serializer.save(user=self.request.user)
+
+class AccountManagementViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for managing user accounts
+    """
+    queryset = User.objects.all()
+    serializer_class = UserCreateSerializer
+    permission_classes = [IsAdminUser]  # Only admin users can access this viewset
 

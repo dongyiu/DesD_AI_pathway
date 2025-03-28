@@ -14,7 +14,7 @@ dotenv==0.9.9
 gunicorn==20.1.0
 idna==3.10
 oauthlib==3.2.2
-psycopg2-binary==2.9.6
+psycopg2-binary
 pycparser==2.22
 PyJWT==2.9.0
 python-dotenv==1.0.1
