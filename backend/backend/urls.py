@@ -16,16 +16,45 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
+from django.http import JsonResponse
+from rest_framework import permissions
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+from django.conf import settings
+from django.conf.urls.static import static
+from DESD_App.viewsets import StreamViewSet
+
+# Create the Swagger schema view
+schema_view = get_schema_view(
+   openapi.Info(
+      title="DESD API",
+      default_version='v1',
+      description="API documentation for DESD Project",
+   ),
+   public=True,
+   permission_classes=[permissions.AllowAny],
+)
 
 urlpatterns = [
+    # Admin panel
     path("admin/", admin.site.urls),
     path("api/",include("DESD_App.urls")), #all of the url requests inside this app must start with /api/end_point name
 
     path("auth/",include("djoser.urls")),  #provided by djoser for Authentication purposes automatically
     path("auth/",include("djoser.urls.jwt")), #provided by djoser for Authentication purposes automatically especially for JWT authentication
+    path('api-auth/', include('rest_framework.urls')),
+  
+    # All video streaming endpoints now use the /api/ prefix
+    # No more legacy endpoints
+    
+    # Swagger/OpenAPI documentation
+    re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
+    re_path(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    re_path(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
 
 """
 ----------------------------------------------------------------
@@ -47,7 +76,7 @@ POST /auth/token/login/ --> Obtain an Authentication token
 
 """
 ----------------------------------------------------------------
-for auth/ djoser.urls.jwt, the following end points:
+for auth/ djoser.urls.jwt, the following endpoints:
 
 POST /auth/jwt/create --> Creates a new stateless [JWT] token or refreshes the current token
 

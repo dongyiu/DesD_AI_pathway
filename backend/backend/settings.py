@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import os
 
 load_dotenv()   # Load environment variables
 
@@ -47,16 +48,30 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "DESD_App",
     "corsheaders",
+    "django_extensions",
+      "drf_yasg"
 ]
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    # 'DEFAULT_PERMISSION_CLASSES': (
+    #     'rest_framework.permissions.IsAuthenticated',  # Only authenticated users can access [Project-level permission]
+    # ),
 }
 
+DJOSER = {
+    # Since we're using JWT, we don't need Djoser's token model.
+    'TOKEN_MODEL': None, 
+    'SERIALIZERS': {
+         'user_create': 'DESD_App.serializers.UserCreateSerializer',
+    },
+}
+
+
 SIMPLE_JWT = {
-    "AUTH_HEADER_TYPES": ("JWT",),
+    "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
 # Add after CORS_ALLOWED_ORIGINS
@@ -81,6 +96,7 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
+CORS_EXPOSE_HEADERS = ['Authorization']
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -112,7 +128,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "backend.wsgi.application"
 
-AUTH_PROFILE_MODULE = 'accounts.UserProfile' #
+# AUTH_PROFILE_MODULE = 'accounts.UserProfile' #
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
@@ -192,3 +208,6 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
