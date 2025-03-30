@@ -18,13 +18,3 @@ class UserCreateSerializer(BaseUserCreateSerializer):
     def Create(self, validated_data):
         user = User.objects.create_user(**validated_data) #using create_user will automatically hash the password field
         return user
-    
-class AIModelSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AIModel
-        fields = '__all__'
-
-class AIModelRequest(serializers.ModelSerializer):
-    class Meta:
-        model = AIModelRequest
-        fields = '__all__'
