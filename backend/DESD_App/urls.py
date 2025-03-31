@@ -2,12 +2,9 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from django.http import JsonResponse
-from .viewsets import StreamViewSet, UserProfileViewSet, AccountManagementViewSet
+from .viewsets import StreamViewSet, UserProfileViewSet, AccountManagementViewSet, UserViewSet
 
 # Define a test view
-def test_view(request):
-    return JsonResponse({"message": "Test endpoint working"})
-
 
 # Initialize the router
 router = DefaultRouter()
@@ -17,6 +14,7 @@ router.register(r'profiles', UserProfileViewSet, basename='profile')
 router.register(r'manage_accounts', AccountManagementViewSet, basename='manage_account')
 
 urlpatterns = [
+    path('my_account/', UserViewSet.as_view(), name='my_account'),
     # Stream API endpoints
     path('stream-info/', StreamViewSet.as_view({'get': 'stream_info'}), name='stream-info'),
     path('get-token/', StreamViewSet.as_view({'get': 'get_token'}), name='get-token'),

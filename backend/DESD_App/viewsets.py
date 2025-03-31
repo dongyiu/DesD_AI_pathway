@@ -105,30 +105,75 @@ class StreamViewSet(viewsets.ViewSet):
             print(f"Error generating token: {str(e)}")
             return Response({"error": "Failed to generate token"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+"""
+No need to put IsAuthenticated inside each permission class, since it is already in settings [on project-level by default]
+meaning that you cannot access any viewset here without being authenticated first
+"""
+
+class UserViewSet(generics.RetrieveUpdateAPIView):
+    """
+    This is for user to change their personal account information or to view it only
+    however they cannot access other users personal information
+    """
+    permission_classes = [IsAuthenticated, IsOwner] #only the owner of their account can access this view
+    serializer_class = UserCreateSerializer
+    #the reason why we do not set queryset to all objects, to prevent user from accessing other users' information
+
+    def get_object(self):
+        return self.request.user  # Only user can access their information even if they pass a different id
+
+
+class AccountManagementViewSet(viewsets.ModelViewSet):
+    """
+    This is for admin to view and manage all users.
+    Admins can view, update, delete, create users.
+    """
+    permission_classes = [IsAuthenticated,IsAdminUser] #only the admin can access this view
+    queryset = User.objects.all()
+    serializer_class = UserCreateSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        target_rolename = instance.groups.first().name
+
+        current_rolename = request.user.groups.first().name
+        if target_rolename == current_rolename:
+            raise PermissionDenied("User cannot delete other users with the same role")
+
+        return super().destroy(request, *args, **kwargs)
+
+class UserActiveCountViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated,IsAdminUser]
+    def list(self, request):
+        total_number_of_users = User.objects.count()
+        total_number_of_active_users = User.objects.filter(is_active=True).count()
+        total_number_of_inactive_users = User.objects.filter(is_active=False).count()
+        data = {
+            "total_number_of_users": total_number_of_users,
+            "total_number_of_active_users": total_number_of_active_users,
+            "total_number_of_inactive_users": total_number_of_inactive_users,
+        }
+
+        return Response(data)
+
 class UserProfileViewSet(viewsets.ModelViewSet):
     """
-    API endpoint for user profiles
+    ViewSet for managing user profiles.
+    Provides CRUD operations for UserProfile model.
     """
     serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         """
-        This view returns the profile for the currently authenticated user
+        Filter queryset to return only the current user's profile
         """
         return UserProfile.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
         """
-        Create a new profile for the authenticated user
+        Set the user field to the current authenticated user when creating a profile
         """
         serializer.save(user=self.request.user)
-
-class AccountManagementViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint for managing user accounts
-    """
-    queryset = User.objects.all()
-    serializer_class = UserCreateSerializer
-    permission_classes = [IsAdminUser]  # Only admin users can access this viewset
 

@@ -46,6 +46,7 @@ urlpatterns = [
     # Authentication endpoints provided by djoser
     path("auth/", include("djoser.urls")),
     path("auth/", include("djoser.urls.jwt")),
+    path('api-auth/', include('rest_framework.urls')),
     
     # All video streaming endpoints now use the /api/ prefix
     # No more legacy endpoints
