@@ -39,12 +39,15 @@ schema_view = get_schema_view(
 urlpatterns = [
     # Admin panel
     path("admin/", admin.site.urls),
-    path("api/",include("DESD_App.urls")), #all of the url requests inside this app must start with /api/end_point name
-
-    path("auth/",include("djoser.urls")),  #provided by djoser for Authentication purposes automatically
-    path("auth/",include("djoser.urls.jwt")), #provided by djoser for Authentication purposes automatically especially for JWT authentication
+    
+    # Our application APIs
+    path("api/", include("DESD_App.urls")),  # API endpoints with /api/ prefix
+    
+    # Authentication endpoints provided by djoser
+    path("auth/", include("djoser.urls")),
+    path("auth/", include("djoser.urls.jwt")),
     path('api-auth/', include('rest_framework.urls')),
-  
+    
     # All video streaming endpoints now use the /api/ prefix
     # No more legacy endpoints
     

@@ -1,13 +1,14 @@
 from rest_framework.generics import CreateAPIView
 from django.contrib.auth.models import User
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from .serializers import *
-from .models import User
-from rest_framework.permissions import IsAdminUser,IsAuthenticated
+from .models import User, UserProfile
+from .serializers import UserProfileSerializer, UserCreateSerializer
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from .permissions import IsOwner
 from rest_framework import generics
 from rest_framework.response import Response
@@ -107,7 +108,6 @@ class StreamViewSet(viewsets.ViewSet):
 """
 No need to put IsAuthenticated inside each permission class, since it is already in settings [on project-level by default]
 meaning that you cannot access any viewset here without being authenticated first
-
 """
 
 class UserViewSet(generics.RetrieveUpdateAPIView):
@@ -136,11 +136,11 @@ class AccountManagementViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
 
         target_rolename = instance.groups.first().name
-        
+
         current_rolename = request.user.groups.first().name
         if target_rolename == current_rolename:
             raise PermissionDenied("User cannot delete other users with the same role")
-            
+
         return super().destroy(request, *args, **kwargs)
 
 class UserActiveCountViewSet(viewsets.ViewSet):
@@ -156,5 +156,24 @@ class UserActiveCountViewSet(viewsets.ViewSet):
         }
 
         return Response(data)
-    
+
+class UserProfileViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing user profiles.
+    Provides CRUD operations for UserProfile model.
+    """
+    serializer_class = UserProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Filter queryset to return only the current user's profile
+        """
+        return UserProfile.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        """
+        Set the user field to the current authenticated user when creating a profile
+        """
+        serializer.save(user=self.request.user)
 

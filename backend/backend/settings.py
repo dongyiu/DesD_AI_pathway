@@ -48,8 +48,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "DESD_App",
     "corsheaders",
-    "django_extensions",
-      "drf_yasg"
+    'drf_yasg'
 ]
 
 REST_FRAMEWORK = {
