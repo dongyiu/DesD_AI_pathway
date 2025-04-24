@@ -9,9 +9,9 @@ def mediapipe_format_dataset_handler(dataset_name):
         ds = load_dataset(dataset_name)
         new_ds = ds.map(add_new_label)
 
-        train = new_ds['train'][:10]
-        test = new_ds['test'][:10]
-        validation = new_ds['validation'][:10]
+        train = new_ds['train'][:500]
+        test = new_ds['test'][:500]
+        validation = new_ds['validation'][:500]
 
         train = pd.DataFrame(train)
         test = pd.DataFrame(test)

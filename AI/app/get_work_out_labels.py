@@ -71,3 +71,77 @@ def add_workout_label_back(example):
 
     # print(" single one is workout label is",workout_label)
     return workout_label
+
+
+def add_muscle_groups_label(example):
+
+    workout = example
+    muscle_group = None
+
+    if workout == 0: # barbell bicep curl
+        muscle_group = 'bicep' # bicep
+    
+    elif workout == 1: # bench press
+        muscle_group = 'chest' # chest
+        
+    elif workout == 2: # chest fly machine
+        muscle_group = 'chest' # chest
+
+    elif workout == 3: # deadlift
+        muscle_group = 'back' # back
+
+    elif workout == 4: # decline bench press
+        muscle_group = 'bicep' # biceps
+
+    elif workout == 5: # hammer curl
+        muscle_group = 'bicep' # bicep
+
+    elif workout == 6: # hip thrust
+        muscle_group = 'legs' # legs
+
+    elif workout == 7: # incline bench press
+        muscle_group = 'chest' # chest
+
+    elif workout == 8: # lat pulldown
+        muscle_group = 'back' # back
+
+    elif workout == 9: # lateral raises
+        muscle_group =  'shoulders' # shoulders
+    
+    elif workout == 10: # leg extensions
+        muscle_group = 'legs' # legs
+
+    elif workout == 11: # leg raises
+        muscle_group = 'core' # core
+
+    elif workout == 12: # plank
+        muscle_group = 'core' # core
+
+    elif workout == 13: # pull up
+        muscle_group = 'back' # back
+
+    elif workout == 14: # push ups
+        muscle_group = 'chest' # chest
+
+    elif workout == 15: # romanian deadlift
+        muscle_group = 'legs' # legs
+    
+    elif workout == 16: # russian twist
+        muscle_group = 'core' # core
+
+    elif workout == 17: # shoulder press
+        muscle_group = 'shoulders' # shoulder
+
+    elif workout == 18: # squat
+        muscle_group = 'legs' # glutes
+
+    elif workout == 19: # t bar row
+        muscle_group = 'back' # back
+
+    elif workout == 20: # tricep dips
+        muscle_group = 'tricep' # tricep
+
+    elif workout == 21: # tricep pushdown
+        muscle_group = 'tricep' #tricep
+
+    return muscle_group
