@@ -49,12 +49,14 @@ def mediapipe_format_dataset_handler(dataset_name):
         train_with_noise = train_with_noise.sample(frac=1).reset_index(drop=True)
         validation_with_noise = validation_with_noise.sample(frac=1).reset_index(drop=True)
 
-        train_with_noise.to_csv('H:\\DesD_AI_pathway\\AI\\data\\train_new.csv')
-        test_with_noise.to_csv('H:\\DesD_AI_pathway\\AI\\data\\test_new.csv')
-        validation_with_noise.to_csv('H:\\DesD_AI_pathway\\AI\\data\\validation_new.csv')
+        train_with_noise.to_csv(os.getcwd() + '/AI/data/train_new.csv')
+        test_with_noise.to_csv(os.getcwd() + '/AI/data/test_new.csv')
+        validation_with_noise.to_csv(os.getcwd() + '/AI/data/validation_new.csv')
+        print("Working directory must be \'DesD_AI_pathway\\AI\'")
 
     except Exception as e:
         print(f'Error processing dataset: {str(e)}')
+        print("Working directory must be \'DesD_AI_pathway\\AI\'")
         return False
     return True
 
