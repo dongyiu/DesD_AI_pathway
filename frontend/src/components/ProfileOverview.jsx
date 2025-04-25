@@ -4,76 +4,34 @@ import { Edit3, Save, Trash2, Eye } from 'lucide-react';
 import ProfileSection from './ProfileSection';
 import UserDetailModal from './UserDetailModal';
 
-const ProfileOverview = ({ userData, setUserData, isEditing, setIsEditing, icons, isDarkMode = true }) => {
+const ProfileOverview = ({ userData, setUserData, isEditing, setIsEditing, icons }) => {
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [localUserData, setLocalUserData] = useState({...userData});
-  const [isSaving, setIsSaving] = useState(false);
   
   // Create user object format compatible with the UserDetailModal
   const userDetails = {
-    id: userData?.id || 1,
-    username: userData?.basicInfo?.username || userData?.basicInfo?.fullName?.split(' ')[0]?.toLowerCase() || 'user',
-    email: userData?.basicInfo?.email || '',
-    rolename: userData?.basicInfo?.role || 'User',
-    memberSince: userData?.basicInfo?.memberSince || '',
+    id: 1, // Example ID
+    username: userData.basicInfo.fullName.split(' ')[0].toLowerCase(),
+    email: userData.basicInfo.email,
+    rolename: 'Customer', // Default role
+    memberSince: userData.basicInfo.memberSince,
     lastActive: 'Today',
-    location: userData?.basicInfo?.location || '',
-    phoneNumber: userData?.basicInfo?.phoneNumber || ''
+    location: userData.basicInfo.location,
+    phoneNumber: '+1 (555) 123-4567'
   };
 
   const handleUserSave = (updatedUser) => {
-    // Update the local user data with values from the user details modal
-    const updatedUserData = {
-      ...localUserData,
-      basicInfo: {
-        ...localUserData.basicInfo,
-        fullName: updatedUser.fullName || updatedUser.username,
-        email: updatedUser.email,
-        location: updatedUser.location || localUserData.basicInfo.location,
-      }
-    };
-    
-    setLocalUserData(updatedUserData);
-  };
-  
-  const handleSaveChanges = async () => {
-    setIsSaving(true);
-    try {
-      // Call the parent component's function to save data to backend
-      await setUserData(localUserData);
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Error saving profile:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-  
-  // Update local state when userData changes (e.g., from API)
-  React.useEffect(() => {
-    if (userData && !isEditing) {
-      setLocalUserData({...userData});
-    }
-  }, [userData, isEditing]);
-
-  // Handle field changes in the sections
-  const handleFieldChange = (section, field, value) => {
-    setLocalUserData(prev => ({
+    // Update the userData with values from the user details modal
+    setUserData(prev => ({
       ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value
+      basicInfo: {
+        ...prev.basicInfo,
+        fullName: updatedUser.username, // This might need adjustment based on your needs
+        email: updatedUser.email,
+        location: updatedUser.location || prev.basicInfo.location,
+        memberSince: updatedUser.memberSince || prev.basicInfo.memberSince
       }
     }));
   };
-
-  if (!userData) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>User data is not available</p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -89,67 +47,50 @@ const ProfileOverview = ({ userData, setUserData, isEditing, setIsEditing, icons
             <Eye className="w-4 h-4" />
             <span className="font-light">Details</span>
           </motion.button>
-          {isEditing ? (
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleSaveChanges}
-              disabled={isSaving}
-              className="bg-green-500/10 hover:bg-green-500/20 px-4 py-2 rounded-lg flex items-center space-x-2 text-sm"
-            >
-              {isSaving ? (
-                <div className="w-4 h-4 border-t-2 border-purple-400 rounded-full animate-spin mr-2"></div>
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-              <span className="font-light">Save</span>
-            </motion.button>
-          ) : (
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setIsEditing(true)}
-              className="bg-purple-500/10 hover:bg-purple-500/20 px-4 py-2 rounded-lg flex items-center space-x-2 text-sm"
-            >
-              <Edit3 className="w-4 h-4" />
-              <span className="font-light">Edit</span>
-            </motion.button>
-          )}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsEditing(!isEditing)}
+            className="bg-purple-500/10 hover:bg-purple-500/20 px-4 py-2 rounded-lg flex items-center space-x-2 text-sm"
+          >
+            {isEditing ? <Save className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
+            <span className="font-light">{isEditing ? 'Save' : 'Edit'}</span>
+          </motion.button>
         </div>
       </div>
 
       <div className="space-y-6">
         <ProfileSection 
           title="BasicInfo" 
-          data={localUserData.basicInfo} 
+          data={userData.basicInfo} 
           icons={icons} 
           isEditing={isEditing}
-          onFieldChange={(field, value) => handleFieldChange('basicInfo', field, value)}
-          isDarkMode={isDarkMode}
+          setUserData={setUserData}
+          userData={userData}
         />
         <ProfileSection 
           title="FitnessProfile" 
-          data={localUserData.fitnessProfile} 
+          data={userData.fitnessProfile} 
           icons={icons} 
           isEditing={isEditing}
-          onFieldChange={(field, value) => handleFieldChange('fitnessProfile', field, value)}
-          isDarkMode={isDarkMode}
+          setUserData={setUserData}
+          userData={userData}
         />
         <ProfileSection 
           title="Preferences" 
-          data={localUserData.preferences} 
+          data={userData.preferences} 
           icons={icons} 
           isEditing={isEditing}
-          onFieldChange={(field, value) => handleFieldChange('preferences', field, value)}
-          isDarkMode={isDarkMode}
+          setUserData={setUserData}
+          userData={userData}
         />
         <ProfileSection 
           title="Achievements" 
-          data={localUserData.achievements} 
+          data={userData.achievements} 
           icons={icons} 
           isEditing={isEditing}
-          onFieldChange={(field, value) => handleFieldChange('achievements', field, value)}
-          isDarkMode={isDarkMode}
+          setUserData={setUserData}
+          userData={userData}
         />
       </div>
 

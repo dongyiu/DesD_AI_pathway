@@ -17,15 +17,17 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from "react-router-dom";
 
 const AuthPage = () => {
-  const user = useAuth();
+  console.log('auth page')
+  const { login, register, user } = useAuth();
+  console.log('error not in first useAuth')
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [errors, setErrors] = useState({});
   const [generalError, setGeneralError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState({});
   
   const navigate = useNavigate();
 
@@ -45,27 +47,28 @@ const AuthPage = () => {
   }, [isDarkMode]);
 
   useEffect(() => {
-    if (user.user) navigate('/');
-  }, [user.user, navigate]);
+    if (user) navigate('/');
+  }, [user, navigate]);
 
   // Reset errors when switching between login and signup
   useEffect(() => {
-    setGeneralError('');
     setErrors({});
+    setGeneralError('');
   }, [isLogin]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setGeneralError('');
     setErrors({});
+    setGeneralError('');
     setIsLoading(true);
   
     try {
       if (isLogin) {
-        await user.login(username, password);
+        await login(username, password);
+        console.log('loggedin')
         navigate('/');
       } else {
-        await user.register(email, username, password);
+        await register(email, username, password);
         setIsLogin(true);
         setGeneralError('Account created! Please log in.');
       }
@@ -83,6 +86,26 @@ const AuthPage = () => {
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
+  };
+
+  // Helper function to render field errors
+  const renderFieldError = (fieldName) => {
+    if (!errors[fieldName]) return null;
+    
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`text-sm flex items-center mt-1 ${
+          isDarkMode ? 'text-red-400' : 'text-red-600'
+        }`}
+      >
+        <AlertCircle className="w-4 h-4 mr-1" />
+        {Array.isArray(errors[fieldName]) 
+          ? errors[fieldName][0] 
+          : errors[fieldName]}
+      </motion.div>
+    );
   };
 
   return (
@@ -114,6 +137,7 @@ const AuthPage = () => {
         } rounded-2xl overflow-hidden`}
       >
         <div className="p-8">
+          {/* Logo and Title */}
           <div className="flex items-center justify-center mb-6">
             <Users className={`w-12 h-12 ${
               isDarkMode ? 'text-purple-400' : 'text-indigo-600'
@@ -125,14 +149,19 @@ const AuthPage = () => {
             </h1>
           </div>
 
+          {/* General Error Message */}
           {generalError && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               className={`p-3 mb-4 rounded-lg flex items-center ${
                 isDarkMode 
-                ? 'bg-red-900 text-red-200'
-                : 'bg-red-100 text-red-800 border border-red-200'
+                ? (generalError.includes('successfully') 
+                  ? 'bg-green-900 text-green-200' 
+                  : 'bg-red-900 text-red-200')
+                : (generalError.includes('successfully') 
+                  ? 'bg-green-100 text-green-800 border border-green-200' 
+                  : 'bg-red-100 text-red-800 border border-red-200')
               }`}
             >
               <AlertCircle className="w-5 h-5 mr-2" />
@@ -140,7 +169,9 @@ const AuthPage = () => {
             </motion.div>
           )}
 
+          {/* Auth Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Username field (shown for registration and login) */}
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -163,12 +194,14 @@ const AuthPage = () => {
                   isDarkMode 
                     ? 'bg-gray-700 text-gray-100 border border-gray-600 focus:ring-purple-500' 
                     : 'bg-white text-gray-900 border border-gray-300 focus:ring-indigo-500'
-                }`}
+                } ${errors.username ? (isDarkMode ? 'border-red-500' : 'border-red-600') : ''}`}
                 placeholder="Enter your username"
                 required
               />
+              {renderFieldError('username')}
             </motion.div>
 
+            {/* Email field (only shown for registration) */}
             {!isLogin && (
               <motion.div
                 initial={{ opacity: 0, y: -20 }}
@@ -192,19 +225,16 @@ const AuthPage = () => {
                     isDarkMode 
                       ? 'bg-gray-700 text-gray-100 border border-gray-600 focus:ring-purple-500' 
                       : 'bg-white text-gray-900 border border-gray-300 focus:ring-indigo-500'
-                  }`}
+                  } ${errors.email ? (isDarkMode ? 'border-red-500' : 'border-red-600') : ''}`}
                   placeholder="Enter your email"
                   required={!isLogin}
                 />
+                {renderFieldError('email')}
               </motion.div>
             )}
 
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: isLogin ? 0.2 : 0.3 }}
-              className="relative"
-            >
+            {/* Password field */}
+            <div className="relative">
               <label className={`block mb-2 flex items-center ${
                 isDarkMode ? 'text-gray-300' : 'text-gray-700'
               }`}>
@@ -221,40 +251,50 @@ const AuthPage = () => {
                   isDarkMode 
                     ? 'bg-gray-700 text-gray-100 border border-gray-600 focus:ring-purple-500' 
                     : 'bg-white text-gray-900 border border-gray-300 focus:ring-indigo-500'
-                }`}
+                } ${errors.password ? (isDarkMode ? 'border-red-500' : 'border-red-600') : ''}`}
                 placeholder="Enter your password"
                 required
               />
-            </motion.div>
+              {renderFieldError('password')}
+              {errors.non_field_errors && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`text-sm flex items-center mt-1 ${
+                    isDarkMode ? 'text-red-400' : 'text-red-600'
+                  }`}
+                >
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {Array.isArray(errors.non_field_errors) 
+                    ? errors.non_field_errors[0] 
+                    : errors.non_field_errors}
+                </motion.div>
+              )}
+            </div>
 
+            {/* Submit button */}
             <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.95 }}
               type="submit"
               disabled={isLoading}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.95 }}
-              className={`w-full mt-6 py-3 rounded-lg flex items-center justify-center 
-                font-semibold text-white ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}
-                ${isDarkMode 
-                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700' 
-                  : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
-                }`}
+              className={`w-full py-3 rounded-lg transition-colors flex items-center justify-center ${
+                isDarkMode
+                  ? isLoading 
+                    ? 'bg-purple-800 text-white cursor-not-allowed' 
+                    : 'bg-purple-600 text-white hover:bg-purple-700'
+                  : isLoading 
+                    ? 'bg-indigo-400 text-white cursor-not-allowed'
+                    : 'bg-indigo-600 text-white hover:bg-indigo-700'
+              }`}
             >
-              {isLoading ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-white"></div>
-              ) : (
-                <>
-                  {isLogin ? (
-                    <LogIn className="w-5 h-5 mr-2" />
-                  ) : (
-                    <User className="w-5 h-5 mr-2" />
-                  )}
-                  {isLogin ? 'Login' : 'Create Account'}
-                </>
-              )}
+              {isLoading ? 'Processing...' : (isLogin ? 'Log In' : 'Sign Up')}
+              {!isLoading && (isLogin ? <LogIn className="ml-2" /> : <Users className="ml-2" />)}
             </motion.button>
           </form>
 
-          <div className="mt-6 text-center">
+          {/* Toggle between Login and Register */}
+          <div className="text-center mt-4">
             <button 
               onClick={() => setIsLogin(!isLogin)}
               className={`hover:underline ${

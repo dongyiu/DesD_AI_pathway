@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   UserCircle, Mail, MapPin, Calendar,
@@ -14,43 +14,40 @@ import FitnessStats from '../components/FitnessStats';
 import UserManagement from '../components/UserManagement';
 import UserDetailsPage from '../components/UserDetailsPage';
 
-import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-
 const AccountManagement = () => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  
-  // Change this to match Navbar.jsx - don't destructure
-  const user = useAuth();
-    
-  // Check system preference on initial load
-  useEffect(() => {
-    const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setIsDarkMode(prefersDarkMode);
-    
-  }, []);
-  
-  // Update dark mode class on body
-  useEffect(() => {
-    if (isDarkMode) {
-      document.body.classList.add('dark');
-    } else {
-      document.body.classList.remove('dark');
-    }
-  }, [isDarkMode]);
-  
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-  };
-
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [userRole, setUserRole] = useState('admin'); // Default to admin view for demonstration
+  const [activePage, setActivePage] = useState('users'); // Default to user management for demonstration
   const [isEditing, setIsEditing] = useState(false);
-  const [activePage, setActivePage] = useState('profile');
-  const [fitnessStats, setFitnessStats] = useState({
+
+  const [userData, setUserData] = useState({
+    basicInfo: {
+      fullName: 'Alex Johnson',
+      email: 'alex@example.com',
+      location: 'New York, USA',
+      memberSince: 'March 2024'
+    },
+    fitnessProfile: {
+      height: '175 cm',
+      weight: '70 kg',
+      bodyFat: '15%',
+      fitnessLevel: 'Intermediate'
+    },
+    preferences: {
+      primaryGoal: 'Build Muscle',
+      workoutFrequency: '4x/week',
+      preferredTime: 'Morning',
+      focusAreas: 'Full Body'
+    },
+    achievements: {
+      workoutsCompleted: '48',
+      daysStreak: '15',
+      personalBests: '12',
+      points: '2,450'
+    }
+  });
+
+  const [fitnessStats] = useState({
     recentWorkouts: [
       { date: '2025-03-10', type: 'Upper Body', duration: '45 min', intensity: 'High' },
       { date: '2025-03-08', type: 'Lower Body', duration: '50 min', intensity: 'Medium' },
@@ -63,32 +60,6 @@ const AccountManagement = () => {
       streakDays: 15
     }
   });
-
-  // Get user data and functions from auth context
-  // Removed destructured { user }
-  
-  // Determine user role from backend data
-  const getUserRole = () => {
-    if (!user.user) return 'user';
-    
-    // Check if the user has admin permissions
-    // This might need to be adjusted based on how roles are stored in your backend
-    if (user.user.basicInfo?.isAdmin || user.user.basicInfo?.role === 'Admin') {
-      return 'admin';
-    }
-    return 'user';
-  };
-  
-  const userRole = getUserRole();
-
-  // Set initial active page based on role
-  useEffect(() => {
-    if (userRole === 'admin') {
-      setActivePage('users');
-    } else {
-      setActivePage('profile');
-    }
-  }, [userRole]);
 
   const icons = {
     fullName: UserCircle,
@@ -109,88 +80,54 @@ const AccountManagement = () => {
     points: Medal
   };
 
-  // Define the missing updateProfile function
-  const updateProfile = async (updatedData) => {
-    const API_URL = 'http://localhost:8000/';
-    try {
-      const response = await axios.patch(
-        `${API_URL}auth/users/me/`, 
-        updatedData,
-        {
-          headers: { 
-            Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-      // Update the user data in context if needed
-      return response.data;
-    } catch (error) {
-      console.error('Profile update error:', error);
-      throw error;
+  // Toggle role for demonstration purposes
+  const toggleRole = () => {
+    if (userRole === 'admin') {
+      setUserRole('user');
+      setActivePage('profile');
+    } else {
+      setUserRole('admin');
+      setActivePage('users');
     }
   };
-
-  // Handle the save action when profile is edited
-  const handleProfileUpdate = async (updatedData) => {
-    try {
-      setLoading(true);
-      await updateProfile(updatedData);
-      setIsEditing(false);
-    } catch (err) {
-      console.error('Failed to update profile:', err);
-      setError('Failed to update profile. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Show loading spinner while user data is being fetched
-  if (loading) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-      </div>
-    );
-  }
 
   const renderActivePage = () => {
     switch (activePage) {
       case 'profile':
         return (
           <ProfileOverview 
-            userData={user.user}
-            setUserData={handleProfileUpdate}
+            userData={userData}
+            setUserData={setUserData}
             isEditing={isEditing}
             setIsEditing={setIsEditing}
             icons={icons}
-            isDarkMode={isDarkMode}
           />
         );
       case 'stats':
-        return <FitnessStats fitnessStats={fitnessStats} isDarkMode={isDarkMode} />;
+        return <FitnessStats fitnessStats={fitnessStats} />;
       case 'users':
-        return <UserManagement isDarkMode={isDarkMode} />;
+        return <UserManagement />;
       case 'userDetails':
-        return <UserDetailsPage isDarkMode={isDarkMode} />;
+        return <UserDetailsPage />;
       default:
         return <div>Page not found</div>;
     }
   };
 
   return (
-    <div className={`min-h-screen ${
-      isDarkMode 
-        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white' 
-        : 'bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 text-gray-900'
-    }`}>
-      <NavBar isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
+      <NavBar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
+
       <div className="max-w-6xl mx-auto px-4 py-6 relative">
-        {error && (
-          <div className="mb-4 bg-red-500/20 text-red-300 p-3 rounded-lg">
-            {error}
-          </div>
-        )}
+        {/* For demonstration only - role switcher */}
+        <div className="mb-4 flex justify-end">
+          <button 
+            onClick={toggleRole}
+            className="text-xs bg-purple-500/20 px-3 py-1 rounded-full text-purple-300"
+          >
+            Currently: {userRole === 'admin' ? 'Admin View' : 'User View'}
+          </button>
+        </div>
 
         <div className="flex flex-col lg:flex-row gap-6">
           <Sidebar 
@@ -199,16 +136,11 @@ const AccountManagement = () => {
             userRole={userRole}
             activePage={activePage}
             setActivePage={setActivePage}
-            isDarkMode={isDarkMode}
           />
 
           <div className="lg:ml-72 flex-1">
             <motion.div 
-              className={`rounded-xl ${
-                isDarkMode 
-                  ? 'backdrop-blur-sm bg-white/5 border border-white/5' 
-                  : 'bg-white shadow-md border border-gray-200'
-              } p-6`}
+              className="rounded-xl backdrop-blur-sm bg-white/5 border border-white/5 p-6"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               key={activePage}
