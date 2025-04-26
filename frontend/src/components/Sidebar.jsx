@@ -6,7 +6,7 @@ import {
   UserCircle
 } from 'lucide-react';
 
-const Sidebar = ({ isMenuOpen, userRole, activePage, setActivePage, setIsMenuOpen }) => {
+const Sidebar = ({ isMenuOpen, userRole, activePage, setActivePage, setIsMenuOpen, isDarkMode = true }) => {
   const rolePages = {
     user: [
       { id: 'profile', label: 'My Profile', icon: User },
@@ -26,7 +26,12 @@ const Sidebar = ({ isMenuOpen, userRole, activePage, setActivePage, setIsMenuOpe
   return (
     <AnimatePresence>
       <motion.div 
-        className={`lg:w-64 ${isMenuOpen ? 'block fixed top-20 left-4 right-4 z-40 bg-gray-900/95 backdrop-blur-md rounded-xl p-4 border border-white/5' : 'hidden'} 
+        className={`lg:w-64 ${isMenuOpen ? 'block fixed top-20 left-4 right-4 z-40' : 'hidden'} 
+                   ${isDarkMode 
+                     ? 'backdrop-blur-md ' 
+                     : 'backdrop-blur-md '
+                   } 
+                   ${isMenuOpen ? 'rounded-xl p-4' : ''}
                    lg:block lg:fixed lg:top-24 lg:bottom-6 lg:overflow-y-auto
                    scrollbar-thin scrollbar-thumb-purple-500/20 scrollbar-track-transparent`}
         initial={{ opacity: 0 }}
@@ -42,7 +47,14 @@ const Sidebar = ({ isMenuOpen, userRole, activePage, setActivePage, setIsMenuOpe
                 if (window.innerWidth < 1024) setIsMenuOpen(false);
               }}
               className={`flex items-center space-x-3 px-4 py-3 rounded-lg cursor-pointer
-                ${activePage === page.id ? 'bg-purple-500/10 text-purple-400' : 'bg-white/5 hover:bg-white/10'}`}
+                ${activePage === page.id 
+                  ? isDarkMode 
+                    ? 'bg-purple-500/10 text-purple-400' 
+                    : 'bg-indigo-50 text-indigo-600 shadow-sm'
+                  : isDarkMode
+                    ? 'bg-white/5 hover:bg-white/10 text-white'
+                    : 'bg-gray-50 hover:bg-gray-100 text-gray-700 shadow-sm'
+                }`}
             >
               <page.icon className="w-4 h-4" />
               <span className="text-sm font-light">{page.label}</span>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   AtSign, 
   Lock, 
@@ -9,25 +9,36 @@ import {
   Users,
   Sun,
   Moon,
-  AlertCircle
+  AlertCircle,
+  ArrowLeft,
+  CheckCircle
 } from 'lucide-react';
 
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from "react-router-dom";
 
+// Animation variants
+const fadeIn = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.5 }
+  }
+};
+
 const AuthPage = () => {
-  console.log('auth page')
-  const { login, register, user } = useAuth();
-  console.log('error not in first useAuth')
+  const user = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [errors, setErrors] = useState({});
   const [generalError, setGeneralError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({});
   
   const navigate = useNavigate();
 
@@ -47,30 +58,31 @@ const AuthPage = () => {
   }, [isDarkMode]);
 
   useEffect(() => {
-    if (user) navigate('/');
-  }, [user, navigate]);
+    if (user.user) navigate('/');
+  }, [user.user, navigate]);
 
   // Reset errors when switching between login and signup
   useEffect(() => {
-    setErrors({});
     setGeneralError('');
+    setSuccessMessage('');
+    setErrors({});
   }, [isLogin]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrors({});
     setGeneralError('');
+    setSuccessMessage('');
+    setErrors({});
     setIsLoading(true);
   
     try {
       if (isLogin) {
-        await login(username, password);
-        console.log('loggedin')
+        await user.login(username, password);
         navigate('/');
       } else {
-        await register(email, username, password);
+        await user.register(email, username, password);
         setIsLogin(true);
-        setGeneralError('Account created! Please log in.');
+        setSuccessMessage('Account created successfully! Please log in.');
       }
     } catch (error) {
       if (error.response) {
@@ -88,238 +100,254 @@ const AuthPage = () => {
     setIsDarkMode(!isDarkMode);
   };
 
-  // Helper function to render field errors
-  const renderFieldError = (fieldName) => {
-    if (!errors[fieldName]) return null;
-    
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`text-sm flex items-center mt-1 ${
-          isDarkMode ? 'text-red-400' : 'text-red-600'
-        }`}
-      >
-        <AlertCircle className="w-4 h-4 mr-1" />
-        {Array.isArray(errors[fieldName]) 
-          ? errors[fieldName][0] 
-          : errors[fieldName]}
-      </motion.div>
-    );
-  };
-
   return (
-    <div className={`fixed inset-0 ${isDarkMode 
-        ? 'bg-gradient-to-br from-gray-800 to-indigo-500 text-gray-100' 
-        : 'bg-gradient-to-br from-gray-100 to-indigo-500 text-gray-900'
-      } transition-colors duration-300 overflow-y-auto flex items-center justify-center p-4`}>
-      {/* Dark Mode Toggle */}
-      <button 
-        onClick={toggleDarkMode}
-        className={`fixed top-4 right-4 p-2 rounded-full transition-all duration-300 ${
-          isDarkMode 
-            ? 'bg-gray-700 text-yellow-400 hover:bg-gray-600' 
-            : 'bg-gray-200 text-indigo-600 hover:bg-gray-300'
-        }`}
-        aria-label="Toggle Dark Mode"
-      >
-        {isDarkMode ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
-      </button>
+    <div className={`min-h-screen fixed inset-0 ${
+      isDarkMode 
+        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-indigo-900' 
+        : 'bg-gradient-to-br from-indigo-50 via-white to-indigo-100'
+      } flex items-center justify-center p-4 overflow-y-auto`}>
+      
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl transform translate-x-1/2 translate-y-1/2"></div>
+      </div>
+      
+      {/* Navigation and Dark Mode Toggle */}
+      <div className="fixed top-4 flex justify-between w-full px-4 z-10">
+        <motion.button 
+          onClick={() => navigate("/")}
+          className={`p-2 rounded-lg flex items-center ${
+            isDarkMode 
+              ? 'bg-gray-800/80 backdrop-blur-sm text-white hover:bg-gray-700/80' 
+              : 'bg-white/80 backdrop-blur-sm text-gray-700 hover:bg-gray-100/80'
+          } transition-all duration-300 shadow-md`}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <ArrowLeft className="w-5 h-5 mr-1" />
+          <span className="text-sm font-medium">Home</span>
+        </motion.button>
+        
+        <motion.button 
+          onClick={toggleDarkMode}
+          className={`p-2 rounded-lg ${
+            isDarkMode 
+              ? 'bg-gray-800/80 backdrop-blur-sm text-purple-400 hover:bg-gray-700/80' 
+              : 'bg-white/80 backdrop-blur-sm text-indigo-600 hover:bg-gray-100/80'
+          } transition-all duration-300 shadow-md`}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          aria-label="Toggle Dark Mode"
+        >
+          {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        </motion.button>
+      </div>
 
       <motion.div 
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
+        initial="hidden"
+        animate="visible"
+        variants={fadeIn}
         className={`w-full max-w-md mx-4 ${
           isDarkMode 
-            ? 'bg-gray-800 border border-gray-700 shadow-2xl' 
-            : 'bg-white shadow-2xl'
-        } rounded-2xl overflow-hidden`}
+            ? 'bg-gray-800/90 backdrop-blur-md border border-white/5' 
+            : 'bg-white/90 backdrop-blur-md border border-gray-100'
+        } rounded-xl overflow-hidden shadow-xl`}
       >
         <div className="p-8">
-          {/* Logo and Title */}
-          <div className="flex items-center justify-center mb-6">
-            <Users className={`w-12 h-12 ${
-              isDarkMode ? 'text-purple-400' : 'text-indigo-600'
-            } mr-3`} />
+          <div className="flex flex-col items-center justify-center mb-8">
+            <motion.div
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              className={`${
+                isDarkMode 
+                  ? 'bg-gradient-to-br from-purple-500 to-indigo-700' 
+                  : 'bg-gradient-to-br from-indigo-500 to-purple-700'
+              } w-16 h-16 rounded-full flex items-center justify-center shadow-lg mb-4`}
+            >
+              <Users className="w-8 h-8 text-white" />
+            </motion.div>
             <h1 className={`text-3xl font-bold ${
-              isDarkMode ? 'text-gray-100' : 'text-gray-800'
+              isDarkMode ? 'text-white' : 'text-gray-800'
             }`}>
               {isLogin ? 'Welcome Back' : 'Create Account'}
             </h1>
+            <p className={`mt-2 ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}>
+              {isLogin ? 'Log in to access your account' : 'Sign up to get started'}
+            </p>
           </div>
 
-          {/* General Error Message */}
-          {generalError && (
+          <AnimatePresence>
+            {generalError && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className={`p-3 mb-6 rounded-lg flex items-center ${
+                  isDarkMode 
+                  ? 'bg-red-900/50 backdrop-blur-sm text-red-200 border border-red-800/30' 
+                  : 'bg-red-50 text-red-800 border border-red-200'
+                }`}
+              >
+                <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+                <span>{generalError}</span>
+              </motion.div>
+            )}
+            
+            {successMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className={`p-3 mb-6 rounded-lg flex items-center ${
+                  isDarkMode 
+                  ? 'bg-green-900/50 backdrop-blur-sm text-green-200 border border-green-800/30' 
+                  : 'bg-green-50 text-green-800 border border-green-200'
+                }`}
+              >
+                <CheckCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+                <span>{successMessage}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`p-3 mb-4 rounded-lg flex items-center ${
-                isDarkMode 
-                ? (generalError.includes('successfully') 
-                  ? 'bg-green-900 text-green-200' 
-                  : 'bg-red-900 text-red-200')
-                : (generalError.includes('successfully') 
-                  ? 'bg-green-100 text-green-800 border border-green-200' 
-                  : 'bg-red-100 text-red-800 border border-red-200')
-              }`}
-            >
-              <AlertCircle className="w-5 h-5 mr-2" />
-              <span>{generalError}</span>
-            </motion.div>
-          )}
-
-          {/* Auth Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Username field (shown for registration and login) */}
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="relative"
             >
-              <label className={`block mb-2 flex items-center ${
+              <label className={`block mb-2 flex items-center text-sm font-medium ${
                 isDarkMode ? 'text-gray-300' : 'text-gray-700'
               }`}>
-                <User className={`w-5 h-5 mr-2 ${
+                <User className={`w-4 h-4 mr-2 ${
                   isDarkMode ? 'text-purple-400' : 'text-indigo-500'
                 }`} />
                 Username
               </label>
-              <input 
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className={`w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
-                  isDarkMode 
-                    ? 'bg-gray-700 text-gray-100 border border-gray-600 focus:ring-purple-500' 
-                    : 'bg-white text-gray-900 border border-gray-300 focus:ring-indigo-500'
-                } ${errors.username ? (isDarkMode ? 'border-red-500' : 'border-red-600') : ''}`}
-                placeholder="Enter your username"
-                required
-              />
-              {renderFieldError('username')}
+              <div className={`relative group`}>
+                <input 
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className={`w-full px-4 py-3 rounded-lg focus:outline-none transition-all duration-300 ${
+                    isDarkMode 
+                      ? 'bg-gray-700/70 text-white border border-gray-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500' 
+                      : 'bg-white text-gray-900 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'
+                  }`}
+                  placeholder="Enter your username"
+                  required
+                />
+              </div>
             </motion.div>
 
-            {/* Email field (only shown for registration) */}
-            {!isLogin && (
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="relative"
-              >
-                <label className={`block mb-2 flex items-center ${
-                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                }`}>
-                  <AtSign className={`w-5 h-5 mr-2 ${
-                    isDarkMode ? 'text-purple-400' : 'text-indigo-500'
-                  }`} />
-                  Email
-                </label>
-                <input 
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
-                    isDarkMode 
-                      ? 'bg-gray-700 text-gray-100 border border-gray-600 focus:ring-purple-500' 
-                      : 'bg-white text-gray-900 border border-gray-300 focus:ring-indigo-500'
-                  } ${errors.email ? (isDarkMode ? 'border-red-500' : 'border-red-600') : ''}`}
-                  placeholder="Enter your email"
-                  required={!isLogin}
-                />
-                {renderFieldError('email')}
-              </motion.div>
-            )}
+            <AnimatePresence>
+              {!isLogin && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <label className={`block mb-2 flex items-center text-sm font-medium ${
+                    isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
+                    <AtSign className={`w-4 h-4 mr-2 ${
+                      isDarkMode ? 'text-purple-400' : 'text-indigo-500'
+                    }`} />
+                    Email
+                  </label>
+                  <div className={`relative group`}>
+                    <input 
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className={`w-full px-4 py-3 rounded-lg focus:outline-none transition-all duration-300 ${
+                        isDarkMode 
+                          ? 'bg-gray-700/70 text-white border border-gray-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500' 
+                          : 'bg-white text-gray-900 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'
+                      }`}
+                      placeholder="Enter your email"
+                      required={!isLogin}
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            {/* Password field */}
-            <div className="relative">
-              <label className={`block mb-2 flex items-center ${
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: isLogin ? 0.2 : 0.3 }}
+            >
+              <label className={`block mb-2 flex items-center text-sm font-medium ${
                 isDarkMode ? 'text-gray-300' : 'text-gray-700'
               }`}>
-                <Lock className={`w-5 h-5 mr-2 ${
+                <Lock className={`w-4 h-4 mr-2 ${
                   isDarkMode ? 'text-purple-400' : 'text-indigo-500'
                 }`} />
                 Password
               </label>
-              <input 
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={`w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
-                  isDarkMode 
-                    ? 'bg-gray-700 text-gray-100 border border-gray-600 focus:ring-purple-500' 
-                    : 'bg-white text-gray-900 border border-gray-300 focus:ring-indigo-500'
-                } ${errors.password ? (isDarkMode ? 'border-red-500' : 'border-red-600') : ''}`}
-                placeholder="Enter your password"
-                required
-              />
-              {renderFieldError('password')}
-              {errors.non_field_errors && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`text-sm flex items-center mt-1 ${
-                    isDarkMode ? 'text-red-400' : 'text-red-600'
+              <div className={`relative group`}>
+                <input 
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={`w-full px-4 py-3 rounded-lg focus:outline-none transition-all duration-300 ${
+                    isDarkMode 
+                      ? 'bg-gray-700/70 text-white border border-gray-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500' 
+                      : 'bg-white text-gray-900 border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'
                   }`}
-                >
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  {Array.isArray(errors.non_field_errors) 
-                    ? errors.non_field_errors[0] 
-                    : errors.non_field_errors}
-                </motion.div>
-              )}
-            </div>
+                  placeholder="Enter your password"
+                  required
+                />
+              </div>
+            </motion.div>
 
-            {/* Submit button */}
             <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.95 }}
               type="submit"
               disabled={isLoading}
-              className={`w-full py-3 rounded-lg transition-colors flex items-center justify-center ${
-                isDarkMode
-                  ? isLoading 
-                    ? 'bg-purple-800 text-white cursor-not-allowed' 
-                    : 'bg-purple-600 text-white hover:bg-purple-700'
-                  : isLoading 
-                    ? 'bg-indigo-400 text-white cursor-not-allowed'
-                    : 'bg-indigo-600 text-white hover:bg-indigo-700'
-              }`}
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className={`w-full mt-8 py-3 px-4 rounded-lg flex items-center justify-center 
+                font-medium text-white shadow-lg transition-all duration-300 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}
+                ${isDarkMode 
+                  ? 'bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 shadow-purple-900/20' 
+                  : 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-indigo-900/20'
+                }`}
             >
-              {isLoading ? 'Processing...' : (isLogin ? 'Log In' : 'Sign Up')}
-              {!isLoading && (isLogin ? <LogIn className="ml-2" /> : <Users className="ml-2" />)}
+              {isLoading ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-t-transparent border-white"></div>
+              ) : (
+                <>
+                  {isLogin ? (
+                    <LogIn className="w-5 h-5 mr-2" />
+                  ) : (
+                    <User className="w-5 h-5 mr-2" />
+                  )}
+                  {isLogin ? 'Log in' : 'Create Account'}
+                </>
+              )}
             </motion.button>
           </form>
 
-          {/* Toggle between Login and Register */}
-          <div className="text-center mt-4">
-            <button 
+          <div className="mt-8 text-center">
+            <motion.button 
               onClick={() => setIsLogin(!isLogin)}
-              className={`hover:underline ${
+              className={`inline-flex items-center text-sm ${
                 isDarkMode 
                   ? 'text-purple-400 hover:text-purple-300' 
-                  : 'text-blue-600 hover:text-blue-500'
-                }`}
+                  : 'text-indigo-600 hover:text-indigo-500'
+                } transition-colors duration-300`}
               disabled={isLoading}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               {isLogin 
                 ? 'Need an account? Sign Up' 
                 : 'Already have an account? Log In'}
-            </button>
-          </div>
-          <div className="text-center mt-4">
-            <button 
-              onClick={()=>navigate("/")}
-              className={`hover:underline ${
-                isDarkMode 
-                  ? 'text-purple-400 hover:text-purple-300' 
-                  : 'text-blue-600 hover:text-blue-500'
-                }`}
-            >
-              Return Home
-            </button>
+            </motion.button>
           </div>
         </div>
       </motion.div>

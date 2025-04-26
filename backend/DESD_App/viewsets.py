@@ -115,12 +115,18 @@ class UserViewSet(generics.RetrieveUpdateAPIView):
     This is for user to change their personal account information or to view it only
     however they cannot access other users personal information
     """
-    permission_classes = [IsAuthenticated, IsOwner] #only the owner of their account can access this view
+    permission_classes = [IsAuthenticated] # User can update their own profile
     serializer_class = UserCreateSerializer
     #the reason why we do not set queryset to all objects, to prevent user from accessing other users' information
 
     def get_object(self):
         return self.request.user  # Only user can access their information even if they pass a different id
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        # Add flag indicating this is a self-update
+        context['is_self_update'] = True
+        return context
 
 
 class AccountManagementViewSet(viewsets.ModelViewSet):

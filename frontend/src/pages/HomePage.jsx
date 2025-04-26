@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Home, 
   Users, 
@@ -13,136 +13,112 @@ import {
   User,
   MessageSquare,
   FileText,
-  ArrowRight
+  ArrowRight,
+  Play,
+  CheckCircle,
+  ChevronRight,
+  Star,
+  Dumbbell
 } from 'lucide-react';
+import NavBar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 
-const Header = ({ isDarkMode,}) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const navigate = useNavigate()
-  const user = useAuth()
-  console.log('user:')
-  console.log(user)
-
-  return (
-    <header className={`${ 
-      isDarkMode 
-      ? 'bg-gray-800 border-gray-700' 
-      : 'bg-white border-gray-200'
-      } border-b shadow-sm transition-colors duration-300`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-            <Home className={`w-8 h-8 ${
-            isDarkMode ? 'text-purple-400' : 'text-indigo-600'
-          } mr-2`} />
-          <h1 className="text-xl font-bold hidden sm:block">GymTracker</h1>
-            </div>
-            
-            <div className="hidden md:flex space-x-8">
-              <a href="#features" className={`${ isDarkMode? 'text-white hover:text-indigo-500' : 'text-gray-400 hover:text-indigo-500'} font-medium`}>Features</a>
-              <a href="#how-it-works" className={`${ isDarkMode? 'text-white hover:text-indigo-500' : 'text-gray-400 hover:text-indigo-500'} font-medium`}>How It Works</a>
-            </div>
-            
-            { user.user ? (
-                <div className='md:flex space-x-8'>
-                  <div>
-                  <button onClick={()=>navigate("/dashboard")} className="hidden md:block bg-indigo-500 hover:bg-indigo-800 text-white font-semibold py-2 px-6 rounded-full transition duration-300">
-                    Dashboard
-                  </button>
-                  </div>
-                  <div>
-                  <button onClick={()=>navigate("/account")} className="hidden md:block bg-indigo-500 hover:bg-indigo-800 text-white font-semibold py-2 px-6 rounded-full transition duration-300">
-                    My Account
-                  </button>
-                  </div>
-                </div>
-                ) : (
-                  <button onClick={()=>navigate("/auth")} className="hidden md:block bg-indigo-500 hover:bg-indigo-800 text-white font-semibold py-2 px-6 rounded-full transition duration-300">
-                  Log in
-                </button>
-                )}
-
-            <div className="md:hidden">
-              <button 
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="text-gray-500 hover:text-gray-700 focus:outline-none"
-              >
-                {isMenuOpen ? (
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                ) : (
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                )}
-              </button>
-            </div>
-          </div>
-          
-          {isMenuOpen && (
-            <div className="md:hidden py-4">
-              <div className="flex flex-col space-y-4">
-                <a href="#features" className={`${ isDarkMode? 'text-white hover:text-indigo-500' : 'text-gray-400 hover:text-indigo-500'} font-medium`}>Features</a>
-                <a href="#how-it-works" className={`${ isDarkMode? 'text-white hover:text-indigo-500' : 'text-gray-400 hover:text-indigo-500'} font-medium`}>How It Works</a>
-                { user.user ? (
-                <div className="flex flex-col space-y-4">
-                <button className="bg-indigo-500 hover:bg-indigo-800 text-white font-semibold py-2 px-6 rounded-full transition duration-300 w-full">
-                  My Account
-                </button>
-                <button className="bg-indigo-500 hover:bg-indigo-800 text-white font-semibold py-2 px-6 rounded-full transition duration-300 w-full">
-                  Dashboard
-                </button>
-                </div>
-                ) : (
-                <button className="bg-indigo-500 hover:bg-indigo-800 text-white font-semibold py-2 px-6 rounded-full transition duration-300 w-full">
-                  Log in
-                </button> 
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </header>
-  );
+// Animation variants
+const fadeIn = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.6 }
+  }
 };
 
-const Hero = ({ isDarkMode,}) => {
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.2
+    }
+  }
+};
+
+const Hero = ({ isDarkMode }) => {
   return (
-    <section className={`pt-32 pb-20 bg-gradient-to-br ${isDarkMode ? 'from-gray-800 to-indigo-500':'from-gray-100 to-indigo-500'}`}>
+    <section className={`pt-32 pb-24 bg-gradient-to-br ${isDarkMode ? 'from-gray-900 via-gray-800 to-indigo-900' : 'from-indigo-50 via-white to-indigo-100'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h1 className={`text-4xl sm:text-5xl font-bold ${isDarkMode ? 'text-white':'text-gray-900'} mb-6`}>Transform Your Workouts With AI</h1>
-        <p className={`text-lg ${isDarkMode ? 'text-gray-100' : 'text-gray-600'} max-w-3xl mx-auto mb-8`}>
-          GymTracker uses advanced artificial intelligence to track your form, provide real-time feedback, and optimise your fitness journey like never before.
-        </p>
-        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-16">
-          <button className="bg-indigo-500 hover:bg-indigo-800 text-white font-semibold py-3 px-8 rounded-full transition duration-300">
-            Get Started
-          </button>
-          <button className="bg-transparent hover:bg-indigo-500 text-indigo-500 hover:text-white font-semibold py-3 px-8 rounded-full border-2 border-indigo-500 transition duration-300">
-            Watch Demo
-          </button>
-        </div>
-        <div className="max-w-4xl mx-auto rounded-lg shadow-2xl">
-          <img src="https://cdn.midjourney.com/c54c6344-3536-40cc-bce3-8257b728d23d/0_3.png" alt="GymTracker App Demo" className="w-full h-auto" />
-        </div>
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={staggerContainer}
+        >
+          <motion.h1 
+            className={`text-4xl sm:text-5xl md:text-6xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-6 leading-tight`}
+            variants={fadeIn}
+          >
+            Transform Your Workouts <span className={`${isDarkMode ? 'text-purple-400' : 'text-indigo-600'}`}>With AI</span>
+          </motion.h1>
+          
+          <motion.p 
+            className={`text-lg md:text-xl ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} max-w-3xl mx-auto mb-10 leading-relaxed`}
+            variants={fadeIn}
+          >
+            GymTracker uses advanced artificial intelligence to track your form, provide real-time feedback, and optimise your fitness journey like never before.
+          </motion.p>
+          
+          <motion.div 
+            className="flex flex-col sm:flex-row justify-center gap-4 mb-16"
+            variants={fadeIn}
+          >
+            <motion.button 
+              className={`bg-gradient-to-r ${isDarkMode ? 'from-purple-500 to-indigo-600' : 'from-indigo-500 to-purple-600'} text-white font-medium py-3 px-8 rounded-lg shadow-lg hover:shadow-xl transition duration-300 flex items-center justify-center space-x-2`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <span>Get Started</span>
+              <ArrowRight size={18} />
+            </motion.button>
+            
+            <motion.button 
+              className={`bg-transparent ${isDarkMode ? 'hover:bg-white/10 text-white border-white/30' : 'hover:bg-indigo-50 text-indigo-600 border-indigo-200'} font-medium py-3 px-8 rounded-lg border transition duration-300 flex items-center justify-center space-x-2`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Play size={18} />
+              <span>Watch Demo</span>
+            </motion.button>
+          </motion.div>
+          
+          <motion.div 
+            className="max-w-4xl mx-auto rounded-xl overflow-hidden shadow-2xl"
+            variants={fadeIn}
+            whileHover={{ y: -5 }}
+          >
+            <img 
+              src="https://cdn.midjourney.com/c54c6344-3536-40cc-bce3-8257b728d23d/0_3.png" 
+              alt="GymTracker App Demo" 
+              className="w-full h-auto"
+            />
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   );
 };
 
-const Features = ({ isDarkMode,}) => {
+const Features = ({ isDarkMode }) => {
   const FeatureCard = ({ icon, title, description }) => {
     return (
-      <div className="bg-white rounded-lg p-8 shadow-md hover:shadow-xl transform hover:-translate-y-2 transition duration-300">
-        <div className="bg-indigo-400 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl">
-          {icon}
+      <motion.div 
+        className={`${isDarkMode ? 'bg-gray-800/60 backdrop-blur-md border border-white/5' : 'bg-white/90 backdrop-blur-md border border-gray-100'} rounded-xl p-8 shadow-lg hover:shadow-xl transition duration-300 h-64 flex flex-col`}
+        whileHover={{ y: -8, scale: 1.02 }}
+      >
+        <div className={`${isDarkMode ? 'bg-gradient-to-br from-purple-500 to-indigo-600' : 'bg-gradient-to-br from-indigo-500 to-purple-600'} text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg`}>
+          <span className="text-2xl">{icon}</span>
         </div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-3">{title}</h3>
-        <p className="text-gray-600">{description}</p>
-      </div>
+        <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-3 text-center`}>{title}</h3>
+        <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'} text-center flex-grow`}>{description}</p>
+      </motion.div>
     );
   };
   
@@ -154,7 +130,7 @@ const Features = ({ isDarkMode,}) => {
     },
     {
       icon: "💪",
-      title: "Pinpoint Muscle Acitivation Detection",
+      title: "Pinpoint Muscle Activation",
       description: "See how each muscle group is activated during your exercise."
     },
     {
@@ -180,19 +156,43 @@ const Features = ({ isDarkMode,}) => {
   ];
 
   return (
-    <section id="features" className="py-24 bg-gray-800">
+    <section id="features" className={`py-24 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-4xl font-bold text-center text-white mb-16">Intelligent Features</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature, index) => (
-            <FeatureCard 
-              key={index} 
-              icon={feature.icon} 
-              title={feature.title} 
-              description={feature.description} 
-            />
-          ))}
-        </div>
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          variants={staggerContainer}
+        >
+          <motion.h2 
+            className={`text-4xl font-bold text-center ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-4`}
+            variants={fadeIn}
+          >
+            Intelligent Features
+          </motion.h2>
+          
+          <motion.p 
+            className={`text-lg text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} max-w-3xl mx-auto mb-16`}
+            variants={fadeIn}
+          >
+            Our AI-powered platform delivers a comprehensive fitness experience
+          </motion.p>
+          
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+            variants={staggerContainer}
+          >
+            {features.map((feature, index) => (
+              <motion.div key={index} variants={fadeIn}>
+                <FeatureCard 
+                  icon={feature.icon} 
+                  title={feature.title} 
+                  description={feature.description} 
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   );
@@ -200,19 +200,26 @@ const Features = ({ isDarkMode,}) => {
 
 const Step = ({ isDarkMode, number, title, description }) => {
   return (
-    <div className="flex flex-col md:flex-row items-center gap-6 mb-16">
-      <div className={`s${isDarkMode? '': 'bg-indigo-500 text-white'} w-14 h-14 rounded-full flex items-center justify-center text-2xl font-bold flex-shrink-0`}>
+    <motion.div 
+      className="flex flex-col md:flex-row items-center gap-6 mb-16"
+      whileHover={{ x: 5 }}
+    >
+      <motion.div 
+        className={`${isDarkMode ? 'bg-purple-500 text-white' : 'bg-indigo-500 text-white'} w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0 shadow-lg`}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+      >
         {number}
-      </div>
+      </motion.div>
       <div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">{title}</h3>
-        <p className="text-gray-600">{description}</p>
+        <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-2`}>{title}</h3>
+        <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{description}</p>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
-const HowItWorks = ({ isDarkMode,}) => {
+const HowItWorks = ({ isDarkMode }) => {
   const steps = [
     {
       number: "1",
@@ -237,19 +244,44 @@ const HowItWorks = ({ isDarkMode,}) => {
   ];
 
   return (
-    <section id="how-it-works" className="py-24 bg-gray-50">
+    <section id="how-it-works" className={`py-24 ${isDarkMode ? 'bg-gray-800/50 backdrop-blur-sm' : 'bg-white/50 backdrop-blur-sm'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-4xl font-bold text-center text-gray-900 mb-16">How It Works</h2>
-        <div className="max-w-3xl mx-auto">
-          {steps.map((step, index) => (
-            <Step 
-              key={index} 
-              number={step.number} 
-              title={step.title} 
-              description={step.description} 
-            />
-          ))}
-        </div>
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          variants={staggerContainer}
+        >
+          <motion.h2 
+            className={`text-4xl font-bold text-center ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-4`}
+            variants={fadeIn}
+          >
+            How It Works
+          </motion.h2>
+          
+          <motion.p 
+            className={`text-lg text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} max-w-3xl mx-auto mb-16`}
+            variants={fadeIn}
+          >
+            Getting started with GymTracker is quick and easy
+          </motion.p>
+          
+          <motion.div 
+            className="max-w-3xl mx-auto bg-gradient-to-b from-transparent to-transparent p-8 rounded-2xl"
+            variants={staggerContainer}
+          >
+            {steps.map((step, index) => (
+              <motion.div key={index} variants={fadeIn}>
+                <Step 
+                  isDarkMode={isDarkMode}
+                  number={step.number} 
+                  title={step.title} 
+                  description={step.description} 
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   );
@@ -257,31 +289,35 @@ const HowItWorks = ({ isDarkMode,}) => {
 
 const TestimonialCard = ({ isDarkMode, quote, name, achievement, avatarUrl }) => {
   return (
-    <div className="bg-gray-50 rounded-lg p-6 shadow-md">
-      <p className="text-gray-600 italic mb-6">{quote}</p>
+    <motion.div 
+      className={`${isDarkMode ? 'bg-gray-800/60 backdrop-blur-md border border-white/5' : 'bg-white/90 backdrop-blur-md border border-gray-100'} rounded-xl p-6 shadow-lg`}
+      whileHover={{ y: -8, scale: 1.02 }}
+    >
+      <div className={`${isDarkMode ? 'text-purple-400' : 'text-indigo-500'} text-5xl font-serif mb-3`}>"</div>
+      <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'} italic mb-6`}>{quote}</p>
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-full">
+        <div className={`w-12 h-12 rounded-full overflow-hidden border-2 ${isDarkMode ? 'border-purple-500' : 'border-indigo-500'}`}>
           <img src={avatarUrl} alt={`${name}'s avatar`} className="w-full h-full object-cover" />
         </div>
         <div>
-          <h4 className="text-lg font-semibold text-gray-900">{name}</h4>
-          <p className="text-gray-500 text-sm">{achievement}</p>
+          <h4 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{name}</h4>
+          <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-500'} text-sm`}>{achievement}</p>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
-const Testimonials = ({ isDarkMode,}) => {
+const Testimonials = ({ isDarkMode }) => {
   const testimonials = [
     {
-      quote: "I've tried many fitness apps, but FitAI is in a league of its own. The form feedback helped me correct issues I didn't even know I had.",
+      quote: "I've tried many fitness apps, but GymTracker is in a league of its own. The form feedback helped me correct issues I didn't even know I had.",
       name: "Sarah Johnson",
       achievement: "Lost 15 lbs in 3 months",
       avatarUrl: "/api/placeholder/50/50"
     },
     {
-      quote: "As a personal trainer, I recommend FitAI to all my clients for their solo sessions. It's like having me there when I can't be.",
+      quote: "As a personal trainer, I recommend GymTracker to all my clients for their solo sessions. It's like having me there when I can't be.",
       name: "Mike Williams",
       achievement: "Certified Personal Trainer",
       avatarUrl: "/api/placeholder/50/50"
@@ -295,20 +331,45 @@ const Testimonials = ({ isDarkMode,}) => {
   ];
 
   return (
-    <section className="py-24 bg-white">
+    <section className={`py-24 ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-4xl font-bold text-center text-gray-900 mb-16">Success Stories</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {testimonials.map((testimonial, index) => (
-            <TestimonialCard 
-              key={index} 
-              quote={testimonial.quote} 
-              name={testimonial.name} 
-              achievement={testimonial.achievement} 
-              avatarUrl={testimonial.avatarUrl} 
-            />
-          ))}
-        </div>
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          variants={staggerContainer}
+        >
+          <motion.h2 
+            className={`text-4xl font-bold text-center ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-4`}
+            variants={fadeIn}
+          >
+            Success Stories
+          </motion.h2>
+          
+          <motion.p 
+            className={`text-lg text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} max-w-3xl mx-auto mb-16`}
+            variants={fadeIn}
+          >
+            See how GymTracker has transformed fitness journeys
+          </motion.p>
+          
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+            variants={staggerContainer}
+          >
+            {testimonials.map((testimonial, index) => (
+              <motion.div key={index} variants={fadeIn}>
+                <TestimonialCard 
+                  isDarkMode={isDarkMode}
+                  quote={testimonial.quote} 
+                  name={testimonial.name} 
+                  achievement={testimonial.achievement} 
+                  avatarUrl={testimonial.avatarUrl} 
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   );
@@ -316,14 +377,33 @@ const Testimonials = ({ isDarkMode,}) => {
 
 const Stat = ({ isDarkMode, value, label }) => {
   return (
-    <div className="text-center">
-      <h2 className="text-4xl font-bold text-white mb-2">{value}</h2>
-      <p className="text-white">{label}</p>
-    </div>
+    <motion.div 
+      className="text-center"
+      whileHover={{ y: -5, scale: 1.05 }}
+    >
+      <motion.h2 
+        className={`text-4xl md:text-5xl font-bold ${isDarkMode ? 'text-white' : 'text-white'} mb-2`}
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+      >
+        {value}
+      </motion.h2>
+      <motion.p 
+        className={`${isDarkMode ? 'text-gray-300' : 'text-indigo-100'}`}
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        {label}
+      </motion.p>
+    </motion.div>
   );
 };
 
-const Stats = ({ isDarkMode,}) => {
+const Stats = ({ isDarkMode }) => {
   const stats = [
     { value: "1M+", label: "Active Users" },
     { value: "50M+", label: "Workouts Analyzed" },
@@ -332,11 +412,19 @@ const Stats = ({ isDarkMode,}) => {
   ];
 
   return (
-    <section className="py-20 bg-gradient-to-r from-indigo-500 to-indigo-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-20 bg-gradient-to-r from-indigo-600 to-purple-700 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/50 to-purple-700/50 backdrop-blur-sm"></div>
+      
+      {/* Optional decorative elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-64 h-64 bg-white/5 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl transform translate-x-1/2 translate-y-1/2"></div>
+      </div>
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {stats.map((stat, index) => (
-            <Stat key={index} value={stat.value} label={stat.label} />
+            <Stat key={index} isDarkMode={isDarkMode} value={stat.value} label={stat.label} />
           ))}
         </div>
       </div>
@@ -344,89 +432,106 @@ const Stats = ({ isDarkMode,}) => {
   );
 };
 
-const ContactForm = ({ isDarkMode,}) => {
+const Footer = ({ isDarkMode }) => {
   return (
-    <section id="contact" className="py-24 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-4xl font-bold text-center text-gray-900 mb-16">Contact Us</h2>
-        <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
-          <div className="mb-6">
-            <label htmlFor="name" className="block text-gray-800 font-medium mb-2">Name</label>
-            <input 
-              type="text" 
-              id="name" 
-              placeholder="Your name" 
-              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div className="mb-6">
-            <label htmlFor="email" className="block text-gray-800 font-medium mb-2">Email</label>
-            <input 
-              type="email" 
-              id="email" 
-              placeholder="Your email" 
-              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div className="mb-6">
-            <label htmlFor="message" className="block text-gray-800 font-medium mb-2">Message</label>
-            <textarea 
-              id="message" 
-              placeholder="How can we help?" 
-              rows="5"
-              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            ></textarea>
-          </div>
-          <button className="w-full bg-indigo-500 hover:bg-indigo-800 text-white font-semibold py-3 px-6 rounded-full transition duration-300">
-            Send Message
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-};
-
-const Footer = ({ isDarkMode,}) => {
-  return (
-    <footer className="bg-gray-900 text-white pt-16 pb-8">
+    <footer className={`${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-900 text-white'} pt-16 pb-8`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           <div>
-            <h3 className="text-xl font-semibold mb-4">GymTracker</h3>
+            <motion.div whileHover={{ scale: 1.05 }} className="inline-block">
+              <h3 className="text-xl font-semibold mb-4 flex items-center">
+                <Home className={`${isDarkMode ? 'text-purple-400' : 'text-purple-400'} mr-2`} size={20} />
+                GymTracker
+              </h3>
+            </motion.div>
             <p className="text-gray-400 mb-6">Transforming fitness through artificial intelligence, computer vision, and personalized guidance.</p>
             <div className="flex space-x-4">
-              <a href="#" className="bg-gray-800 hover:bg-indigo-500 w-10 h-10 rounded-full flex items-center justify-center transition duration-300">FB</a>
-              <a href="#" className="bg-gray-800 hover:bg-indigo-500 w-10 h-10 rounded-full flex items-center justify-center transition duration-300">TW</a>
-              <a href="#" className="bg-gray-800 hover:bg-indigo-500 w-10 h-10 rounded-full flex items-center justify-center transition duration-300">IG</a>
-              <a href="#" className="bg-gray-800 hover:bg-indigo-500 w-10 h-10 rounded-full flex items-center justify-center transition duration-300">YT</a>
+              <motion.a 
+                href="#" 
+                className={`${isDarkMode ? 'bg-gray-800 hover:bg-purple-500' : 'bg-gray-800 hover:bg-purple-500'} w-10 h-10 rounded-full flex items-center justify-center transition duration-300`}
+                whileHover={{ y: -5, scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <span className="sr-only">Facebook</span>
+                FB
+              </motion.a>
+              <motion.a 
+                href="#" 
+                className={`${isDarkMode ? 'bg-gray-800 hover:bg-purple-500' : 'bg-gray-800 hover:bg-purple-500'} w-10 h-10 rounded-full flex items-center justify-center transition duration-300`}
+                whileHover={{ y: -5, scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <span className="sr-only">Twitter</span>
+                TW
+              </motion.a>
+              <motion.a 
+                href="#" 
+                className={`${isDarkMode ? 'bg-gray-800 hover:bg-purple-500' : 'bg-gray-800 hover:bg-purple-500'} w-10 h-10 rounded-full flex items-center justify-center transition duration-300`}
+                whileHover={{ y: -5, scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <span className="sr-only">Instagram</span>
+                IG
+              </motion.a>
+              <motion.a 
+                href="#" 
+                className={`${isDarkMode ? 'bg-gray-800 hover:bg-purple-500' : 'bg-gray-800 hover:bg-purple-500'} w-10 h-10 rounded-full flex items-center justify-center transition duration-300`}
+                whileHover={{ y: -5, scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <span className="sr-only">YouTube</span>
+                YT
+              </motion.a>
             </div>
           </div>
           
           <div>
             <h3 className="text-xl font-semibold mb-4">Product</h3>
             <ul className="space-y-3">
-              <li><a href="#" className="text-gray-400 hover:text-white transition duration-300">Features</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition duration-300">FAQ</a></li>
+              <motion.li whileHover={{ x: 5 }}>
+                <a href="#features" className="text-gray-400 hover:text-purple-400 transition duration-300 flex items-center">
+                  Features
+                </a>
+              </motion.li>
+              <motion.li whileHover={{ x: 5 }}>
+                <a href="#" className="text-gray-400 hover:text-purple-400 transition duration-300">FAQ</a>
+              </motion.li>
             </ul>
           </div>
           
           <div>
             <h3 className="text-xl font-semibold mb-4">Resources</h3>
             <ul className="space-y-3">
-              <li><a href="#" className="text-gray-400 hover:text-white transition duration-300">Blog</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition duration-300">Tutorials</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition duration-300">Support</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition duration-300">Community</a></li>
+              <motion.li whileHover={{ x: 5 }}>
+                <a href="#" className="text-gray-400 hover:text-purple-400 transition duration-300">Blog</a>
+              </motion.li>
+              <motion.li whileHover={{ x: 5 }}>
+                <a href="#" className="text-gray-400 hover:text-purple-400 transition duration-300">Tutorials</a>
+              </motion.li>
+              <motion.li whileHover={{ x: 5 }}>
+                <a href="#" className="text-gray-400 hover:text-purple-400 transition duration-300">Support</a>
+              </motion.li>
+              <motion.li whileHover={{ x: 5 }}>
+                <a href="#" className="text-gray-400 hover:text-purple-400 transition duration-300">Community</a>
+              </motion.li>
             </ul>
           </div>
           
           <div>
             <h3 className="text-xl font-semibold mb-4">Company</h3>
             <ul className="space-y-3">
-              <li><a href="#" className="text-gray-400 hover:text-white transition duration-300">About Us</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition duration-300">Careers</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition duration-300">Privacy Policy</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition duration-300">Terms of Service</a></li>
+              <motion.li whileHover={{ x: 5 }}>
+                <a href="#" className="text-gray-400 hover:text-purple-400 transition duration-300">About Us</a>
+              </motion.li>
+              <motion.li whileHover={{ x: 5 }}>
+                <a href="#" className="text-gray-400 hover:text-purple-400 transition duration-300">Careers</a>
+              </motion.li>
+              <motion.li whileHover={{ x: 5 }}>
+                <a href="#" className="text-gray-400 hover:text-purple-400 transition duration-300">Privacy Policy</a>
+              </motion.li>
+              <motion.li whileHover={{ x: 5 }}>
+                <a href="#" className="text-gray-400 hover:text-purple-400 transition duration-300">Terms of Service</a>
+              </motion.li>
             </ul>
           </div>
         </div>
@@ -439,43 +544,75 @@ const Footer = ({ isDarkMode,}) => {
   );
 };
 
+const FloatingDumbbellButton = ({ isDarkMode, navigate }) => {
+  // Animation for continuous bouncing effect
+  const bounceAnimation = {
+    y: [0, -10, 0],
+    transition: {
+      duration: 2,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  };
+
+  return (
+    <motion.div 
+      className="fixed bottom-6 right-6 z-50 md:bottom-8 md:right-8"
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ delay: 1, duration: 0.5 }}
+    >
+      <motion.button
+        onClick={() => navigate('/workout')}
+        className={`w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-lg 
+          ${isDarkMode 
+            ? 'bg-gradient-to-br from-purple-500 to-indigo-600 text-white' 
+            : 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white'
+          } hover:shadow-xl transition-shadow duration-300`}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        animate={bounceAnimation}
+      >
+        <Dumbbell size={24} className="text-white" />
+      </motion.button>
+    </motion.div>
+  );
+};
+
 const HomePage = () => {
   const navigate = useNavigate();
   const [isDarkMode, setIsDarkMode] = useState(false);
   
-    // Check system preference on initial load
-    useEffect(() => {
-      const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setIsDarkMode(prefersDarkMode);
-      
-    }, [navigate]);
+  // Check system preference on initial load
+  useEffect(() => {
+    const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setIsDarkMode(prefersDarkMode);
+  }, []);
+
+  // Update dark mode class on body
+  useEffect(() => {
+    if (isDarkMode) {
+      document.body.classList.add('dark');
+    } else {
+      document.body.classList.remove('dark');
+    }
+  }, [isDarkMode]);
   
-    // Update dark mode class on body
-    useEffect(() => {
-      if (isDarkMode) {
-        document.body.classList.add('dark');
-      } else {
-        document.body.classList.remove('dark');
-      }
-    }, [isDarkMode]);
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    navigate('/auth');
+  };
   
-    const toggleDarkMode = () => {
-      setIsDarkMode(!isDarkMode);
-    };
-  
-    const handleLogout = () => {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      navigate('/auth');
-    };
-    
   return (
-    <div className={`overflow-scroll fixed inset-0 ${
-      isDarkMode 
-        ? 'bg-gray-900 text-gray-100' 
-        : 'bg-gray-50 text-gray-900'
-    } transition-colors duration-300`}>
-      <Header isDarkMode={isDarkMode} />
+    <div className={`min-h-screen ${
+      isDarkMode ? 'bg-gradient-to-br from-gray-900 to-indigo-900 text-white' : 'bg-gradient-to-br from-white to-indigo-100 text-gray-900'
+    }`}>
+      <NavBar isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
       <main>
         <Hero isDarkMode={isDarkMode}/>
         <HowItWorks isDarkMode={isDarkMode}/>
@@ -483,7 +620,10 @@ const HomePage = () => {
         <Testimonials isDarkMode={isDarkMode}/>
         <Stats isDarkMode={isDarkMode}/>
       </main>
-      <Footer />
+      <Footer isDarkMode={isDarkMode} />
+      
+      {/* Floating Dumbbell Button */}
+      <FloatingDumbbellButton isDarkMode={isDarkMode} navigate={navigate} />
     </div>
   );
 };

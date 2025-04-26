@@ -89,3 +89,5 @@ wcwidth==0.2.13
 xxhash==3.5.0
 yarl==1.18.3
 zipp==3.21.0
+flask_socketio==5.5.1
+tensorflow==2.19.0
