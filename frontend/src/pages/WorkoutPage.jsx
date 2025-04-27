@@ -51,6 +51,31 @@ const muscleGroupMap = {
   7: "back"
 };
 
+const workoutToMuscles = {
+  0: [MuscleType.BICEPS], // Barbell Bicep Curl
+  1: [MuscleType.CHEST, MuscleType.FRONT_DELTOIDS, MuscleType.TRICEPS], // Bench Press
+  2: [MuscleType.CHEST, MuscleType.FRONT_DELTOIDS], // Chest Fly Machine
+  3: [MuscleType.LOWER_BACK, MuscleType.HAMSTRINGS, MuscleType.GLUTES], // Deadlift
+  4: [MuscleType.CHEST, MuscleType.FRONT_DELTOIDS, MuscleType.TRICEPS], // Decline Bench Press
+  5: [MuscleType.BICEPS], // Hammer Curl
+  6: [MuscleType.GLUTES, MuscleType.HAMSTRINGS], // Hip Thrust
+  7: [MuscleType.CHEST, MuscleType.FRONT_DELTOIDS, MuscleType.TRICEPS], // Incline Bench Press
+  8: [MuscleType.BACK_DELTOIDS, MuscleType.UPPER_BACK, MuscleType.BICEPS], // Lat Pulldown
+  9: [MuscleType.SIDE_DELTOIDS], // Lateral Raises
+  10: [MuscleType.QUADS], // Leg Extensions
+  11: [MuscleType.ABS], // Leg Raises
+  12: [MuscleType.ABS, MuscleType.LOWER_BACK], // Plank
+  13: [MuscleType.BACK_DELTOIDS, MuscleType.UPPER_BACK, MuscleType.BICEPS], // Pull Up
+  14: [MuscleType.CHEST, MuscleType.FRONT_DELTOIDS, MuscleType.TRICEPS], // Push Ups
+  15: [MuscleType.HAMSTRINGS, MuscleType.LOWER_BACK], // Romanian Deadlift
+  16: [MuscleType.ABS, MuscleType.OBLIQUES], // Russian Twist
+  17: [MuscleType.FRONT_DELTOIDS, MuscleType.TRICEPS], // Shoulder Press
+  18: [MuscleType.QUADS, MuscleType.GLUTES, MuscleType.HAMSTRINGS], // Squat
+  19: [MuscleType.UPPER_BACK, MuscleType.BACK_DELTOIDS], // T Bar Row
+  20: [MuscleType.TRICEPS, MuscleType.CHEST], // Tricep Dips
+  21: [MuscleType.TRICEPS] // Tricep Pushdown
+};
+
 // --- Utility functions (Unchanged) ---
 const getJointName = (index) => {
   switch(index) {
@@ -173,34 +198,31 @@ const WorkoutSelector = ({ selectedWorkout, onSelectWorkout, isFullscreen }) => 
   );
 };
 
-// New MuscleGroupVisualizer component
-const MuscleGroupVisualizer = ({ isVisible, isFullscreen }) => {
-  // Format data for React Body Highlighter - activate biceps
-  const muscleData = [
-    { name: 'Bicep Curl', muscles: [MuscleType.BICEPS] },
-    { name: 'Tricep Pushdown', muscles: [MuscleType.TRICEPS] },
-    { name: 'Lat Pulldown', muscles: [MuscleType.BACK_DELTOIDS, MuscleType.LOWER_BACK, MuscleType.UPPER_BACK] },
-  ];
+const MuscleGroupVisualizer = ({ isVisible, isFullscreen, predictedWorkout }) => {
+  const muscleData = [{
+    name: workoutMap[predictedWorkout] || 'No workout detected',
+    muscles: workoutToMuscles[predictedWorkout] || []
+  }];
 
   return isVisible ? (
     <>
-      {/* Front view - Left side */}
+      {/* Front view */}
       <div className={`absolute ${isFullscreen ? 'bottom-20 left-8' : 'bottom-20 left-4'} z-30 pointer-events-none w-[120px] sm:w-[180px] lg:w-[200px] max-w-[30vw]`}>
         <Model 
           data={muscleData}
           type={ModelType.ANTERIOR}
           highlightedColors={['#e65a5a']}
-          onClick={() => {}} // Empty handler to prevent errors
+          onClick={() => {}} 
         />
       </div>
       
-      {/* Back view - Right side */}
+      {/* Back view */}
       <div className={`absolute ${isFullscreen ? 'bottom-20 right-8' : 'bottom-20 right-4'} z-30 pointer-events-none w-[120px] sm:w-[180px] lg:w-[200px] max-w-[30vw]`}>
         <Model 
           data={muscleData}
           type={ModelType.POSTERIOR}
           highlightedColors={['#e65a5a']}
-          onClick={() => {}} // Empty handler to prevent errors
+          onClick={() => {}} 
         />
       </div>
     </>
@@ -583,7 +605,11 @@ const TrainingPage = () => {
             />
             
             {/* Add Muscle Group Visualizer */}
-            <MuscleGroupVisualizer isVisible={showMuscleVisualizer} isFullscreen={isFullscreen} />
+            <MuscleGroupVisualizer 
+              isVisible={showMuscleVisualizer} 
+              isFullscreen={isFullscreen}
+              predictedWorkout={predictedWorkout}
+/>
             <MuscleVisualizerToggle 
               isVisible={showMuscleVisualizer} 
               toggleVisibility={toggleMuscleVisualizer} 
