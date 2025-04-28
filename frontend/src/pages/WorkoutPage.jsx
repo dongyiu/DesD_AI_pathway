@@ -7,6 +7,9 @@ import * as poseDetection from '@mediapipe/pose';
 import { POSE_CONNECTIONS } from '@mediapipe/pose';
 import { Camera } from '@mediapipe/camera_utils';
 import io from 'socket.io-client';
+// Import React Body Highlighter
+import Model from 'react-body-highlighter';
+import { MuscleType, ModelType } from 'react-body-highlighter';
 
 // Uncomment NavBar import
 import NavBar from '../components/Navbar';
@@ -35,6 +38,17 @@ const workoutMap = {
   19: "T Bar Row", 
   20: "Tricep Dips", 
   21: "Tricep Pushdown"
+};
+
+// Define muscle group mapping
+const muscleGroupMap = {
+  1: "shoulders",
+  2: "chest",
+  3: "biceps",
+  4: "core",
+  5: "triceps",
+  6: "legs",
+  7: "back"
 };
 
 // --- Utility functions (Unchanged) ---
@@ -142,12 +156,16 @@ const FullscreenButton = ({ isFullscreen, toggleFullscreen }) => {
   );
 };
 
-// Now add a new workout selector component
+// Add workout selector component
 const WorkoutSelector = ({ selectedWorkout, onSelectWorkout, isFullscreen }) => {
   return (
-    <div className={`${isFullscreen ? 'absolute top-16 left-4 z-40' : 'mb-2'}`}>
+    <div className={`text-white ${isFullscreen ? 'absolute top-16 right-4 z-40' : 'text-center mb-4'}`}>
+      <label htmlFor="workout-select" className={`mr-2 ${isFullscreen ? 'text-white' : ''}`}>
+        Workout:
+      </label>
       <select 
-        value={selectedWorkout} 
+        id="workout-select"
+        value={selectedWorkout}
         onChange={(e) => onSelectWorkout(Number(e.target.value))}
         className={`px-3 py-1 rounded-md ${isFullscreen ? 'bg-black/40 text-white border border-gray-500' : 'bg-white dark:bg-gray-700 border dark:border-gray-600'}`}
       >
@@ -156,6 +174,108 @@ const WorkoutSelector = ({ selectedWorkout, onSelectWorkout, isFullscreen }) => 
         ))}
       </select>
     </div>
+  );
+};
+
+// New MuscleGroupVisualizer component
+const MuscleGroupVisualizer = ({ isVisible, isFullscreen, muscleGroup }) => {
+  // Get the appropriate muscle data based on the current muscle group
+  let muscleData;
+  
+  // Use a safer approach - hardcode a valid array for the default case
+  if (muscleGroup === 0 || muscleGroup > 7) {
+    // Hardcoded safe default with a valid muscle to avoid library errors
+    muscleData = [
+      { name: 'Rest', muscles: [] }
+    ];
+  } else {
+    // Function to map muscle group IDs to React Body Highlighter muscle types
+    switch(muscleGroup) {
+      case 1: // shoulders
+        muscleData = [
+          { name: 'Shoulder Press', muscles: [MuscleType.BACK_DELTOIDS, MuscleType.FRONT_DELTOIDS] }
+        ];
+        break;
+      case 2: // chest
+        muscleData = [
+          { name: 'Bench Press', muscles: [MuscleType.CHEST] }
+        ];
+        break;
+      case 3: // biceps
+        muscleData = [
+          { name: 'Bicep Curl', muscles: [MuscleType.BICEPS] }
+        ];
+        break;
+      case 4: // core
+        muscleData = [
+          { name: 'Crunches', muscles: [MuscleType.ABS, MuscleType.OBLIQUES] }
+        ];
+        break;
+      case 5: // triceps
+        muscleData = [
+          { name: 'Tricep Pushdown', muscles: [MuscleType.TRICEPS] }
+        ];
+        break;
+      case 6: // legs
+        muscleData = [
+          { name: 'Squats', muscles: [MuscleType.QUADRICEPS, MuscleType.HAMSTRING, MuscleType.CALVES] },
+          { name: 'Hip Thrust', muscles: [MuscleType.GLUTEAL] }
+        ];
+        break;
+      case 7: // back
+        muscleData = [
+          { name: 'Lat Pulldown', muscles: [MuscleType.UPPER_BACK, MuscleType.LOWER_BACK] }
+        ];
+        break;
+    }
+  }
+  
+  // Now just check if we want to show the visualizer
+  return isVisible ? (
+    <>
+      {/* Front view - Left side */}
+      <div className={`absolute ${isFullscreen ? 'bottom-20 left-8' : 'bottom-20 left-4'} z-30 pointer-events-none w-[120px] sm:w-[180px] lg:w-[200px] max-w-[30vw]`}>
+        <Model 
+          data={muscleData}
+          type={ModelType.ANTERIOR}
+          highlightedColors={['#e65a5a']}
+          onClick={() => {}} // Empty handler to prevent errors
+        />
+      </div>
+      
+      {/* Back view - Right side */}
+      <div className={`absolute ${isFullscreen ? 'bottom-20 right-8' : 'bottom-20 right-4'} z-30 pointer-events-none w-[120px] sm:w-[180px] lg:w-[200px] max-w-[30vw]`}>
+        <Model 
+          data={muscleData}
+          type={ModelType.POSTERIOR}
+          highlightedColors={['#e65a5a']}
+          onClick={() => {}} // Empty handler to prevent errors
+        />
+      </div>
+    </>
+  ) : null;
+};
+
+// Add toggle button for muscle visualization
+const MuscleVisualizerToggle = ({ isVisible, toggleVisibility, isFullscreen }) => {
+  return (
+    <button 
+      onClick={toggleVisibility}
+      className={`absolute ${isFullscreen ? 'bottom-4 right-8' : 'bottom-4 right-4'} z-40 bg-black/40 hover:bg-black/60 text-white p-2 rounded-lg transition-colors`}
+      title={isVisible ? "Hide Muscle Activation" : "Show Muscle Activation"}
+    >
+      {isVisible ? (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+        </svg>
+      ) : (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M5 4a1 1 0 00-1 1v10a1 1 0 001 1h10a1 1 0 001-1V5a1 1 0 00-1-1H5zm0 2h10v8H5V6z" clipRule="evenodd" />
+          <path d="M7 9a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" />
+          <path d="M7 12a1 1 0 011-1h2a1 1 0 110 2H8a1 1 0 01-1-1z" />
+        </svg>
+      )}
+    </button>
   );
 };
 
@@ -180,16 +300,35 @@ const TrainingPage = () => {
   const sendIntervalRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   
+  // Add state for muscle visualizer toggle
+  const [showMuscleVisualizer, setShowMuscleVisualizer] = useState(true);
+  
   // Modified workout prediction state
   const [predictedWorkout, setPredictedWorkout] = useState(12); // Default to plank (12)
+  
+  // Add state for manually selected workout (default to predicted)
+  const [selectedWorkout, setSelectedWorkout] = useState(12); // Default to plank (12)
+  
+  // Add state for muscle group prediction
+  const [predictedMuscleGroup, setPredictedMuscleGroup] = useState(0); // Default to none
+  
+  // Add state for muscle group prediction stability
+  const [recentMuscleGroupPredictions, setRecentMuscleGroupPredictions] = useState([]);
+  const [muscleGroupConfidence, setMuscleGroupConfidence] = useState(0);
   
   // Add state for workout prediction stability
   const [recentWorkoutPredictions, setRecentWorkoutPredictions] = useState([]);
   const PREDICTION_WINDOW_SIZE = 30; // Keep track of ~1.5 seconds of predictions (at 50ms intervals)
   const CONFIDENCE_THRESHOLD = 0.6; // 60% majority needed to change workout
   const lastStableWorkoutRef = useRef(12); // Track the last stable workout type
+  const lastStableMuscleGroupRef = useRef(0); // Track the last stable muscle group
   // Add state to track overall confidence
   const [predictionConfidence, setPredictionConfidence] = useState(0);
+  
+  // Add handler for workout selection change
+  const handleWorkoutChange = (workoutId) => {
+    setSelectedWorkout(Number(workoutId));
+  };
 
   // Add new function to stabilize workout predictions
   const updateStableWorkoutPrediction = (newPrediction) => {
@@ -226,6 +365,47 @@ const TrainingPage = () => {
       if (confidence >= CONFIDENCE_THRESHOLD || mostFrequent === lastStableWorkoutRef.current) {
         setPredictedWorkout(mostFrequent);
         lastStableWorkoutRef.current = mostFrequent;
+      }
+      
+      return updated;
+    });
+  };
+  
+  // Add new function to stabilize muscle group predictions
+  const updateStableMuscleGroupPrediction = (newPrediction) => {
+    // Update the array of recent predictions
+    setRecentMuscleGroupPredictions(prev => {
+      // Add new prediction and keep window size limited
+      const updated = [...prev, newPrediction].slice(-PREDICTION_WINDOW_SIZE);
+      
+      // Count occurrences of each muscle group in our window
+      const counts = updated.reduce((acc, type) => {
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      }, {});
+      
+      // Find the most frequent muscle group
+      let mostFrequent = null;
+      let highestCount = 0;
+      
+      Object.entries(counts).forEach(([type, count]) => {
+        if (count > highestCount) {
+          highestCount = count;
+          mostFrequent = Number(type);
+        }
+      });
+      
+      // Calculate confidence (percentage of window with this prediction)
+      const confidence = highestCount / updated.length;
+      
+      // Store the confidence value 
+      setMuscleGroupConfidence(confidence);
+      
+      // Only update the displayed muscle group if confidence passes threshold
+      // or if it's the same as our current stable muscle group
+      if (confidence >= CONFIDENCE_THRESHOLD || mostFrequent === lastStableMuscleGroupRef.current) {
+        setPredictedMuscleGroup(mostFrequent);
+        lastStableMuscleGroupRef.current = mostFrequent;
       }
       
       return updated;
@@ -287,6 +467,12 @@ const TrainingPage = () => {
         if (data.predicted_workout_type !== undefined) {
           // Instead of directly setting the workout, update our stable prediction
           updateStableWorkoutPrediction(data.predicted_workout_type);
+        }
+        
+        // Check if there's a predicted muscle group in the data
+        if (data.predicted_muscle_group !== undefined) {
+          // Update our stable muscle group prediction
+          updateStableMuscleGroupPrediction(data.predicted_muscle_group);
         }
 
         // Update timing info
@@ -474,15 +660,22 @@ const TrainingPage = () => {
     infoPanel: isFullscreen ? "absolute bottom-4 left-0 right-0 bg-black/50 text-white px-4 py-2 rounded-none" : "mt-4 text-center text-sm text-gray-700 dark:text-gray-300"
   };
 
+  // Add function to toggle muscle visualizer
+  const toggleMuscleVisualizer = () => {
+    setShowMuscleVisualizer(!showMuscleVisualizer);
+  };
+
   // --- Render ---
   return (
     <section className={`overflow-hidden ${isFullscreen ? 'fixed inset-0 bg-black' : 'fixed inset-0'} ${isDarkMode && !isFullscreen ? 'bg-gradient-to-br from-gray-800 to-indigo-500' : !isFullscreen ? 'bg-gradient-to-br from-gray-100 to-indigo-500' : ''}`}>
       <NavBar isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
       <main className={isFullscreen ? "h-full" : ""}>
         <div className={fullscreenStyles.container}>
+          {!isFullscreen && <WorkoutSelector selectedWorkout={selectedWorkout} onSelectWorkout={handleWorkoutChange} isFullscreen={isFullscreen} />}
           <div className={fullscreenStyles.videoContainer}>
             <ConnectionStatus status={connectionStatus} />
             <FullscreenButton isFullscreen={isFullscreen} toggleFullscreen={toggleFullscreen} />
+            {isFullscreen && <WorkoutSelector selectedWorkout={selectedWorkout} onSelectWorkout={handleWorkoutChange} isFullscreen={isFullscreen} />}
             <video
               ref={webcamRef}
               className="absolute top-0 left-0 w-full h-full object-cover rounded-lg"
@@ -502,28 +695,51 @@ const TrainingPage = () => {
                 borderRadius: isFullscreen ? '0' : undefined 
               }}
             />
+            
+            {/* Add Muscle Group Visualizer - use selectedWorkout instead of predictedWorkout */}
+            <MuscleGroupVisualizer isVisible={showMuscleVisualizer} isFullscreen={isFullscreen} muscleGroup={predictedMuscleGroup} />
+            <MuscleVisualizerToggle 
+              isVisible={showMuscleVisualizer} 
+              toggleVisibility={toggleMuscleVisualizer} 
+              isFullscreen={isFullscreen}
+            />
           </div>
           <div className={fullscreenStyles.infoPanel}>
-            <p>
-              {predictionConfidence < 0.7 ? (
-                <span className="font-semibold text-yellow-400">Start working out or position yourself in frame</span>
-              ) : (
-                <>
-                  Predicted Workout: <span className="font-semibold">{workoutMap[predictedWorkout]}</span>
-                  {recentWorkoutPredictions.length > 0 && (
-                    <span className="ml-2 text-xs opacity-75">
-                      (Confidence: {Math.round(predictionConfidence * 100)}%)
-                    </span>
-                  )}
-                </>
-              )}
-            </p>
+            <div className="flex flex-wrap justify-center items-center">
+              <div className="text-center">
+                <p>
+                  <span className="font-medium">Selected Workout:</span> {workoutMap[selectedWorkout]}
+                </p>
+                {predictedWorkout !== selectedWorkout && (
+                  <p className="text-sm">
+                    <span className="font-medium">AI Suggestion:</span> {workoutMap[predictedWorkout]}
+                    {recentWorkoutPredictions.length > 0 && (
+                      <span className="ml-2 text-xs opacity-75">
+                        (Confidence: {Math.round(predictionConfidence * 100)}%)
+                      </span>
+                    )}
+                  </p>
+                )}
+              </div>
+            </div>
+            
+            {predictedMuscleGroup > 0 && (
+              <p className={`${isFullscreen ? '' : 'mt-1'} text-center`}>
+                Muscle Group: <span className="font-semibold">{muscleGroupMap[predictedMuscleGroup]}</span>
+                {recentMuscleGroupPredictions.length > 0 && (
+                  <span className="ml-2 text-xs opacity-75">
+                    (Confidence: {Math.round(muscleGroupConfidence * 100)}%)
+                  </span>
+                )}
+              </p>
+            )}
+            
             {(feedbackLatency > 0 || receivedCount > 0) && (
-              <p className={`${isFullscreen ? '' : 'mt-1'} text-xs`}>
+              <p className={`${isFullscreen ? '' : 'mt-1'} text-xs text-center`}>
                 Latency: {feedbackLatency > 0 ? `${feedbackLatency}ms` : 'N/A'} | Corrections: {receivedCount}
               </p>
             )}
-            <p className={`${isFullscreen ? '' : 'mt-1'} text-xs`}>Socket: {connectionStatus}</p>
+            <p className={`${isFullscreen ? '' : 'mt-1'} text-xs text-center`}>Socket: {connectionStatus}</p>
           </div>
         </div>
       </main>

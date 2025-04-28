@@ -1,32 +1,103 @@
 import pandas as pd
-import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
 import pickle
-from datasets import load_dataset, Dataset
-from sklearn.ensemble import  RandomForestClassifier
-from sklearn.tree import  DecisionTreeClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+import os
 import matplotlib.pyplot as plt
-from sklearn.neural_network import MLPClassifier
+import seaborn as sns
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.preprocessing import StandardScaler
-from sklearn.feature_selection import VarianceThreshold
-from sklearn.model_selection import GridSearchCV
+from imblearn.over_sampling import SMOTE
+
+# PyTorch imports
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import Dataset, DataLoader
+from torch.nn.utils.rnn import pad_sequence
+
+# Assuming these imports work the same way as in the original code
 from mediapipe_handler import MediaPipeHandler
 from get_work_out_labels import add_workout_label_back
-import seaborn as sns
-from sklearn.svm import SVC
-from imblearn.over_sampling import SMOTE
+
+# Set random seeds for reproducibility
+torch.manual_seed(42)
+np.random.seed(42)
+
+# GPU setup with more detailed handling
+def get_device_info():
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+        current_device = torch.cuda.current_device()
+        device_properties = torch.cuda.get_device_properties(current_device)
+        print(f"GPU Device: {torch.cuda.get_device_name(current_device)}")
+        print(f"GPU Memory: {device_properties.total_memory / 1e9:.2f} GB")
+        print(f"CUDA Version: {torch.version.cuda}")
+        # Set device to highest memory capacity GPU if multiple are available
+        if torch.cuda.device_count() > 1:
+            print(f"Multiple GPUs available: {torch.cuda.device_count()}")
+            max_mem = 0
+            max_mem_device = 0
+            for i in range(torch.cuda.device_count()):
+                props = torch.cuda.get_device_properties(i)
+                print(f"  GPU {i}: {props.name} ({props.total_memory / 1e9:.2f} GB)")
+                if props.total_memory > max_mem:
+                    max_mem = props.total_memory
+                    max_mem_device = i
+            torch.cuda.set_device(max_mem_device)
+            print(f"Using GPU {max_mem_device} as primary device")
+        print("CUDA is available! Training on GPU.")
+    else:
+        device = torch.device("cpu")
+        print("WARNING: CUDA is not available. Training on CPU will be much slower!")
+    
+    return device
+
+device = get_device_info()
+
+# Enable cuDNN benchmarking for performance optimization if using GPU
+if device.type == 'cuda':
+    torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.deterministic = False
 
 mediapipe_model = MediaPipeHandler()
 
-training_dataset=mediapipe_model.read_csv_to_pd("H:\\DesD_AI_pathway\\AI\\data\\train_new.csv")[:40000]
-testing_dataset=mediapipe_model.read_csv_to_pd("H:\\DesD_AI_pathway\\AI\\data\\test_new.csv")
-validation_dataset=mediapipe_model.read_csv_to_pd("H:\\DesD_AI_pathway\\AI\\data\\validation_new.csv")
-training_dataset['WorkoutLabel']=training_dataset.apply(lambda x: add_workout_label_back(x['label']) ,axis=1)
-Workout_labels=training_dataset['WorkoutLabel'].unique()
-plt.figure(figsize=(20,8))
+# Define base data directory using a relative path
+try:
+    # Try script-style path resolution first
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+except NameError:
+    # If in a Jupyter notebook, use the current working directory
+    import pathlib
+    base_dir = os.path.abspath(os.path.join(os.getcwd(), ".."))
+
+data_dir = os.path.join(base_dir, "data")
+models_dir = os.path.join(data_dir, "models")
+
+# Create models directory if it doesn't exist
+os.makedirs(models_dir, exist_ok=True)
+
+# Print paths for debugging
+print(f"Base directory: {base_dir}")
+print(f"Data directory: {data_dir}")
+print(f"Models directory: {models_dir}")
+
+# Load and prepare data
+training_dataset = mediapipe_model.read_csv_to_pd(os.path.join(data_dir, "train_new.csv"))[:40000]
+testing_dataset = mediapipe_model.read_csv_to_pd(os.path.join(data_dir, "test_new.csv"))
+validation_dataset = mediapipe_model.read_csv_to_pd(os.path.join(data_dir, "validation_new.csv"))
+
+# Add workout labels
+training_dataset['WorkoutLabel'] = training_dataset.apply(lambda x: add_workout_label_back(x['label']), axis=1)
+testing_dataset['WorkoutLabel'] = testing_dataset.apply(lambda x: add_workout_label_back(x['label']), axis=1)
+validation_dataset['WorkoutLabel'] = validation_dataset.apply(lambda x: add_workout_label_back(x['label']), axis=1)
+
+# Get unique workout labels
+Workout_labels = training_dataset['WorkoutLabel'].unique()
+print(f"Number of unique workout labels: {len(Workout_labels)}")
+print(f"Workout labels: {Workout_labels}")
+
+# Visualize class distribution
+plt.figure(figsize=(20, 8))
 value_counts = training_dataset['WorkoutLabel'].value_counts()
 percentages = value_counts / value_counts.sum() * 100
 
@@ -40,143 +111,458 @@ for p in ax.patches:
 
 plt.title('Training Dataset WorkoutLabel Distribution (Percentage)')
 plt.ylabel('Percentage')
-plt.show()
-"""
-Removes original feature and splits it into x,y,z components
-
-"""
-def Preprocess_data(dataframe,columns_to_flatten):
-    final_df=dataframe.copy()
-    # Expanding each column into 3 separate columns (x, y, z) and appending it to the final dataframe.
-    for column in columns_to_flatten:
-        # print(np.vstack(dataframe[column]).astype(float))
-        expanded_df=pd.DataFrame(np.vstack(dataframe[column]).astype(float), 
-                           columns=[column+'_x', column+'_y', column+'_z'],
-                           index=dataframe.index)
-        new_df = pd.concat([dataframe.drop(column, axis=1), expanded_df], axis=1)
-        for new_column in new_df.columns:
-            final_df[new_column] = new_df[new_column]
-
-    return final_df.drop(columns=columns_to_flatten,axis=1)
-
-"""
-Splits dataset into X_train,y_train or X_test,y_test, if you give it training dataset then X_train and y_train
-
-"""
-def Return_X_y(dataframe,columns_to_delete):
-    X=dataframe.drop(columns=columns_to_delete)
-    y=dataframe['label']
-    return X,y
-features_to_split=['left_shoulder',
-       'right_shoulder', 'left_elbow', 'right_elbow', 'left_wrist',
-       'right_wrist', 'left_hip', 'right_hip', 'left_knee',
-       'right_knee', 'left_ankle', 'right_ankle']
-
-training_dataset_preprocessed=Preprocess_data(training_dataset,features_to_split)
-X_train, y_train = Return_X_y(training_dataset_preprocessed,['label','muscle group','WorkoutLabel','image','Unnamed: 0'])
-
-
-testing_dataset_preprocessed=Preprocess_data(testing_dataset,features_to_split)
-X_test, y_test = Return_X_y(testing_dataset_preprocessed,['label','muscle group','image','Unnamed: 0'])
-
-validation_dataset_preprocessed=Preprocess_data(validation_dataset,features_to_split)
-X_validation, y_validation = Return_X_y(validation_dataset_preprocessed,['label','muscle group','image','Unnamed: 0'])
-smote = SMOTE(random_state=42)
-X_train, y_train = smote.fit_resample(X_train, y_train)
-X_test, y_test = smote.fit_resample(X_test, y_test)
-X_validation, y_validation = smote.fit_resample(X_validation, y_validation)
-print("X_train Shape",X_train.shape)
-
-print("y_train Shape",y_train.shape)
-
-print("X_test Shape",X_test.shape)
-
-print("y_test Shape",y_test.shape)
-corr_matrix = X_train.corr().abs()
-
-mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
-
-plt.figure(figsize=(24, 15))
-sns.heatmap(corr_matrix, mask=mask, cmap='coolwarm', 
-            vmax=1.0, vmin=0, center=0.5,
-            square=True, linewidths=.5, annot=True).set(title='Correlation Matrix for all features')
 plt.tight_layout()
 plt.show()
-correlation_threshold = 0.8
-columns_to_drop = []
 
-for i in range(len(corr_matrix.columns)):
-    for j in range(i+1, len(corr_matrix.columns)):
-        if corr_matrix.iloc[i, j] > correlation_threshold:
-            columns_to_drop.append(corr_matrix.columns[j])
-            print(f"High Correlation between {corr_matrix.columns[i]} and {corr_matrix.columns[j]} --> {corr_matrix.iloc[i, j]:.2f}")
+# Preprocessing function - but don't convert label columns
+def preprocess_data(dataframe, columns_to_flatten):
+    final_df = dataframe.copy()
+    
+    # Expanding each column into 3 separate columns (x, y, z)
+    for column in columns_to_flatten:
+        # Convert string representations of arrays to actual arrays if needed
+        if isinstance(dataframe[column].iloc[0], str):
+            try:
+                dataframe[column] = dataframe[column].apply(
+                    lambda x: np.array(eval(x)) if isinstance(x, str) else x
+                )
+            except:
+                print(f"Warning: Could not convert column {column} from string to array")
+        
+        # Now expand the arrays into separate columns
+        try:
+            expanded_df = pd.DataFrame(
+                np.vstack(dataframe[column]).astype(float), 
+                columns=[column+'_x', column+'_y', column+'_z'],
+                index=dataframe.index
+            )
+            new_df = pd.concat([dataframe.drop(column, axis=1), expanded_df], axis=1)
+            for new_column in new_df.columns:
+                final_df[new_column] = new_df[new_column]
+        except Exception as e:
+            print(f"Error processing column {column}: {e}")
+            print(f"Sample value: {dataframe[column].iloc[0]}")
+            
+    result_df = final_df.drop(columns=columns_to_flatten, axis=1)
+    
+    # Clean numeric columns only - skip label columns
+    columns_to_skip = ['label', 'WorkoutLabel', 'muscle group']
+    for col in result_df.columns:
+        if col in columns_to_skip:
+            continue
+            
+        if result_df[col].dtype == 'object':
+            print(f"Converting column {col} from object type")
+            try:
+                # Try to convert string arrays to float
+                if isinstance(result_df[col].iloc[0], str) and '[' in result_df[col].iloc[0]:
+                    # This looks like a string representation of an array
+                    result_df[col] = result_df[col].apply(
+                        lambda x: float(eval(x)[0]) if isinstance(x, str) and '[' in x else x
+                    )
+                
+                # General conversion to float
+                result_df[col] = result_df[col].astype(float)
+            except Exception as e:
+                print(f"Could not convert column {col}: {e}")
+                print(f"Sample value: {result_df[col].iloc[0]}")
+                # As a last resort, drop problematic columns
+                if "[" in str(result_df[col].iloc[0]):
+                    print(f"Dropping column {col} as it contains array strings")
+                    result_df = result_df.drop(columns=[col])
+    
+    return result_df
 
-columns_to_drop = list(set(columns_to_drop))
-print(f"Columns to drop: {columns_to_drop}")
-print(f"number of columns to drop: {len(columns_to_drop)}")
-print(f"Columns to drop: {columns_to_drop}")
-X_train_feature_eng=X_train.drop(columns=columns_to_drop)
-X_test_feature_eng=X_test.drop(columns=columns_to_drop)
-X_train_feature_eng
-"""
-This function takes both training_dataset
-then it will show the result for each one of the models
+# Splits dataset into X, y
+def return_X_y(dataframe, columns_to_delete):
+    X = dataframe.drop(columns=columns_to_delete)
+    y = dataframe['label']
+    return X, y
 
-1-Accuracy
-2-Classification Report
-3-Confusion Matrix
-4-Precision, Recall, F1-Score
-5-Time Taken to train
-6-Features used to build the model
+# List of body keypoint features to preprocess
+features_to_split = [
+    'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
+    'left_wrist', 'right_wrist', 'left_hip', 'right_hip', 
+    'left_knee', 'right_knee', 'left_ankle', 'right_ankle'
+]
 
-"""
+# Process datasets
+training_dataset_preprocessed = preprocess_data(training_dataset, features_to_split)
+X_train, y_train = return_X_y(
+    training_dataset_preprocessed, 
+    ['label', 'muscle group', 'WorkoutLabel', 'image', 'Unnamed: 0']
+)
 
-def train_model(model,param_grid,X_train,y_train,X_test,y_test):
-    grid_search = GridSearchCV(
-        estimator=model,
-        param_grid=param_grid,
-        cv=3,  # 5-fold cross-validation
-        n_jobs=-1,  # Use all available cores
-        verbose=2,
-        scoring='accuracy'
-    )
-    grid_search.fit(X_train,y_train)
-    y_predictions=grid_search.predict(X_test)
-    accuracy = accuracy_score(y_test,y_predictions)
-    report = classification_report(y_test,y_predictions)
-    confusion_matrix_values = confusion_matrix(y_test,y_predictions)
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(confusion_matrix_values, annot=True, fmt='d', cmap='Blues', cbar=True, 
-                xticklabels=Workout_labels,
-                yticklabels=Workout_labels)
+testing_dataset_preprocessed = preprocess_data(testing_dataset, features_to_split)
+X_test, y_test = return_X_y(
+    testing_dataset_preprocessed, 
+    ['label', 'muscle group', 'WorkoutLabel', 'image', 'Unnamed: 0']
+)
 
-    # Add labels, title, and axis ticks
-    plt.xlabel('Predicted Labels')
-    plt.ylabel('True Labels')
-    plt.title('Confusion Matrix Heatmap')
+validation_dataset_preprocessed = preprocess_data(validation_dataset, features_to_split)
+X_validation, y_validation = return_X_y(
+    validation_dataset_preprocessed, 
+    ['label', 'muscle group', 'WorkoutLabel', 'image', 'Unnamed: 0']
+)
 
-    # Show the plot
+# Convert any remaining object columns to float
+for df in [X_train, X_test, X_validation]:
+    for col in df.select_dtypes(include=['object']).columns:
+        try:
+            df[col] = df[col].astype(float)
+        except:
+            print(f"Dropping column {col} that can't be converted to float")
+            df.drop(columns=[col], inplace=True)
+
+# Apply SMOTE for class balancing
+smote = SMOTE(random_state=42)
+X_train_balanced, y_train_balanced = smote.fit_resample(X_train, y_train)
+X_test_balanced, y_test_balanced = smote.fit_resample(X_test, y_test)
+X_validation_balanced, y_validation_balanced = smote.fit_resample(X_validation, y_validation)
+
+print("After SMOTE:")
+print("X_train Shape", X_train_balanced.shape)
+print("y_train Shape", y_train_balanced.shape)
+print("X_test Shape", X_test_balanced.shape)
+print("y_test Shape", y_test_balanced.shape)
+
+# Scale features for better neural network performance
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train_balanced)
+X_test_scaled = scaler.transform(X_test_balanced)
+X_validation_scaled = scaler.transform(X_validation_balanced)
+
+# Save the scaler for future use
+scaler_path = os.path.join(models_dir, "feature_scaler.pkl")
+with open(scaler_path, 'wb') as f:
+    pickle.dump(scaler, f)
+
+# Create label encoder and encoding
+from sklearn.preprocessing import LabelEncoder
+label_encoder = LabelEncoder()
+label_encoder.fit(y_train_balanced)
+
+# Save the label encoder
+encoder_path = os.path.join(models_dir, "label_encoder.pkl")
+with open(encoder_path, 'wb') as f:
+    pickle.dump(label_encoder, f)
+
+# Encode labels
+y_train_encoded = label_encoder.transform(y_train_balanced)
+y_test_encoded = label_encoder.transform(y_test_balanced)
+y_validation_encoded = label_encoder.transform(y_validation_balanced)
+
+# PyTorch Dataset for workout data
+class WorkoutDataset(Dataset):
+    def __init__(self, features, labels, add_noise=False, noise_level=0.05):
+        self.features = torch.FloatTensor(features)
+        self.labels = torch.LongTensor(labels)
+        self.add_noise = add_noise
+        self.noise_level = noise_level
+        
+    def __len__(self):
+        return len(self.labels)
+    
+    def __getitem__(self, idx):
+        x = self.features[idx]
+        
+        # Add Gaussian noise during training for robustness
+        if self.add_noise:
+            noise = torch.randn_like(x) * self.noise_level
+            x = x + noise
+            
+        return x, self.labels[idx]
+
+# Create datasets (with higher noise for training)
+train_dataset = WorkoutDataset(X_train_scaled, y_train_encoded, add_noise=True, noise_level=0.08)
+test_dataset = WorkoutDataset(X_test_scaled, y_test_encoded)
+val_dataset = WorkoutDataset(X_validation_scaled, y_validation_encoded)
+
+# Create dataloaders
+batch_size = 64
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=batch_size)
+val_loader = DataLoader(val_dataset, batch_size=batch_size)
+
+# Define LSTM Model
+class LSTMWorkoutClassifier(nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers, num_classes, dropout=0.2):
+        super(LSTMWorkoutClassifier, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        
+        # LSTM layers
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, 
+                           batch_first=True, dropout=dropout if num_layers > 1 else 0)
+        
+        # Fully connected layers
+        self.fc1 = nn.Linear(hidden_size, 128)
+        self.dropout = nn.Dropout(dropout)
+        self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(128, num_classes)
+        
+    def forward(self, x):
+        # Reshape input for LSTM - add time dimension (batch, time_steps, features)
+        # For this non-sequential data, we treat each sample as having one time step
+        x = x.unsqueeze(1)
+        
+        # Initialize hidden state
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
+        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
+        
+        # Forward propagate LSTM
+        out, _ = self.lstm(x, (h0, c0))
+        
+        # Get output from last time step
+        out = out[:, -1, :]
+        
+        # Dense layers
+        out = self.fc1(out)
+        out = self.relu(out)
+        out = self.dropout(out)
+        out = self.fc2(out)
+        
+        return out
+
+# Define model parameters
+input_size = X_train_scaled.shape[1]  # Number of features
+hidden_size = 128
+num_layers = 2
+num_classes = len(label_encoder.classes_)
+dropout_rate = 0.3
+
+# Initialize model
+model = LSTMWorkoutClassifier(input_size, hidden_size, num_layers, num_classes, dropout_rate)
+model = model.to(device)
+print(model)
+
+# Loss function and optimizer
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)  # Added weight decay for regularization
+scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
+
+# Print model device info
+print(f"Model is on device: {next(model.parameters()).device}")
+
+# Training function with GPU memory optimization
+def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler, num_epochs=25):
+    # Empty CUDA cache at the start of training
+    if device.type == 'cuda':
+        torch.cuda.empty_cache()
+    train_losses = []
+    val_losses = []
+    val_accuracies = []
+    
+    # For early stopping
+    best_val_loss = float('inf')
+    patience = 10
+    patience_counter = 0
+    
+    for epoch in range(num_epochs):
+        # Training phase
+        model.train()
+        running_loss = 0.0
+        for i, (inputs, labels) in enumerate(train_loader):
+            inputs, labels = inputs.to(device), labels.to(device)
+            
+            # Zero the parameter gradients
+            optimizer.zero_grad()
+            
+            # Forward pass
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            
+            # Backward and optimize
+            loss.backward()
+            optimizer.step()
+            
+            running_loss += loss.item() * inputs.size(0)
+            
+        epoch_train_loss = running_loss / len(train_loader.dataset)
+        train_losses.append(epoch_train_loss)
+        
+        # Validation phase
+        model.eval()
+        running_loss = 0.0
+        all_preds = []
+        all_labels = []
+        
+        with torch.no_grad():
+            for inputs, labels in val_loader:
+                inputs, labels = inputs.to(device), labels.to(device)
+                
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+                
+                running_loss += loss.item() * inputs.size(0)
+                
+                _, preds = torch.max(outputs, 1)
+                all_preds.extend(preds.cpu().numpy())
+                all_labels.extend(labels.cpu().numpy())
+        
+        epoch_val_loss = running_loss / len(val_loader.dataset)
+        val_losses.append(epoch_val_loss)
+        
+        # Calculate accuracy
+        val_accuracy = accuracy_score(all_labels, all_preds)
+        val_accuracies.append(val_accuracy)
+        
+        # Update learning rate
+        scheduler.step(epoch_val_loss)
+        
+        # Print statistics
+        print(f'Epoch {epoch+1}/{num_epochs}')
+        print(f'Train Loss: {epoch_train_loss:.4f}, Val Loss: {epoch_val_loss:.4f}, Val Acc: {val_accuracy:.4f}')
+        
+        # Early stopping
+        if epoch_val_loss < best_val_loss:
+            best_val_loss = epoch_val_loss
+            best_model_state = model.state_dict()
+            patience_counter = 0
+        else:
+            patience_counter += 1
+            if patience_counter >= patience:
+                print(f'Early stopping at epoch {epoch+1}')
+                model.load_state_dict(best_model_state)  # Restore best model
+                break
+    
+    # Plot training curves
+    plt.figure(figsize=(10, 5))
+    plt.subplot(1, 2, 1)
+    plt.plot(train_losses, label='Train Loss')
+    plt.plot(val_losses, label='Validation Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    
+    plt.subplot(1, 2, 2)
+    plt.plot(val_accuracies, label='Validation Accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    
+    plt.tight_layout()
     plt.show()
-    print("Best Parameters:", grid_search.best_params_)
-    print("Accuracy:", (accuracy*100),"%")
-    print("Classification Report:\n", report)
-    return grid_search.best_estimator_
+    
+    return model
 
-param_grid = {
-    'n_estimators': [100],
-    'max_depth': [20],
-    # 'min_samples_split': [2, 5, 10],
-    # 'min_samples_leaf': [1, 2, 4],
-    # 'max_features': ['sqrt', 'log2', None]
-}
+# Train the model
+print("Starting model training...")
+model = train_model(model, train_loader, val_loader, criterion, optimizer, scheduler, num_epochs=50)
 
-random_tree_model = RandomForestClassifier(random_state=42)
-rfc_model = train_model(random_tree_model,param_grid,X_train,y_train,X_test,y_test)
-print(rfc_model.classes_)
+# Save the model
+model_path = os.path.join(models_dir, "lstm_workout_classifier.pth")
+torch.save({
+    'model_state_dict': model.state_dict(),
+    'optimizer_state_dict': optimizer.state_dict(),
+    'input_size': input_size,
+    'hidden_size': hidden_size,
+    'num_layers': num_layers,
+    'num_classes': num_classes,
+    'dropout_rate': dropout_rate
+}, model_path)
 
-with open("H:\\DesD_AI_pathway\\AI\\data\\models\\rfc_workout_classifier.pkl", 'wb') as f:
-    print(type(rfc_model))
-    pickle.dump(rfc_model, f)
+print(f"Model saved to {model_path}")
 
-with open("H:\\DesD_AI_pathway\\AI\\data\\models\\rfc_workout_classifier.pkl", 'rb') as f:
-    rfc_model = pickle.load(f)
+# Evaluation function
+def evaluate_model(model, data_loader, label_encoder):
+    model.eval()
+    all_preds = []
+    all_labels = []
+    
+    with torch.no_grad():
+        for inputs, labels in data_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            outputs = model(inputs)
+            _, preds = torch.max(outputs, 1)
+            
+            all_preds.extend(preds.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
+    
+    # Convert indices back to original labels for reporting
+    all_preds_decoded = label_encoder.inverse_transform(all_preds)
+    all_labels_decoded = label_encoder.inverse_transform(all_labels)
+    
+    # Calculate metrics
+    accuracy = accuracy_score(all_labels_decoded, all_preds_decoded)
+    report = classification_report(all_labels_decoded, all_preds_decoded)
+    conf_matrix = confusion_matrix(all_labels_decoded, all_preds_decoded)
+    
+    return accuracy, report, conf_matrix, all_preds_decoded, all_labels_decoded
+
+# Evaluate on test set
+print("\n===== Model Performance Evaluation =====")
+
+# Make sure model is on correct device
+if next(model.parameters()).device != device:
+    model = model.to(device)
+    print(f"Model moved to {device}")
+
+test_accuracy, test_report, test_conf_matrix, test_preds, test_labels = evaluate_model(
+    model, test_loader, label_encoder
+)
+print(f"Test Accuracy: {test_accuracy:.4f} ({test_accuracy*100:.2f}%)")
+print("\nClassification Report (Test Data):")
+print(test_report)
+
+# Plot confusion matrix
+plt.figure(figsize=(12, 10))
+sns.heatmap(test_conf_matrix, annot=True, fmt='d', cmap='Blues', 
+            xticklabels=label_encoder.classes_,
+            yticklabels=label_encoder.classes_)
+plt.xlabel('Predicted Labels')
+plt.ylabel('True Labels')
+plt.title('Confusion Matrix on Test Data')
+plt.tight_layout()
+plt.show()
+
+# Evaluate on validation set
+val_accuracy, val_report, val_conf_matrix, val_preds, val_labels = evaluate_model(
+    model, val_loader, label_encoder
+)
+print(f"\nValidation Accuracy: {val_accuracy:.4f} ({val_accuracy*100:.2f}%)")
+print("\nClassification Report (Validation Data):")
+print(val_report)
+
+# Plot confusion matrix for validation data
+plt.figure(figsize=(12, 10))
+sns.heatmap(val_conf_matrix, annot=True, fmt='d', cmap='Blues', 
+            xticklabels=label_encoder.classes_,
+            yticklabels=label_encoder.classes_)
+plt.xlabel('Predicted Labels')
+plt.ylabel('True Labels')
+plt.title('Confusion Matrix on Validation Data')
+plt.tight_layout()
+plt.show()
+
+# Function for making predictions on new data
+def predict_workout(model, scaler, label_encoder, input_data):
+    """
+    Make predictions on new data
+    
+    Args:
+        model: Trained LSTM model
+        scaler: Fitted StandardScaler
+        label_encoder: Fitted LabelEncoder
+        input_data: Data for prediction (should be preprocessed)
+        
+    Returns:
+        Predicted workout labels
+    """
+    model.eval()
+    
+    # Scale the input data
+    input_scaled = scaler.transform(input_data)
+    input_tensor = torch.FloatTensor(input_scaled).to(device)
+    
+    # Make prediction
+    with torch.no_grad():
+        outputs = model(input_tensor)
+        _, preds = torch.max(outputs, 1)
+    
+    # Convert indices back to original labels
+    predicted_labels = label_encoder.inverse_transform(preds.cpu().numpy())
+    
+    return predicted_labels
+
+print("\n===== Model Evaluation Complete =====")
