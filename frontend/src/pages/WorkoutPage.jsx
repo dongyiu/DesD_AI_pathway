@@ -581,7 +581,7 @@ const TrainingPage = () => {
         if (results.poseLandmarks) {
             const landmarks = results.poseLandmarks;
             updateLandmarks(landmarks); // Update ref and state
-
+            console.log(results)
             // --- Drawing Logic ---
             drawUserPose(ctx, landmarks, canvas.width, canvas.height); // Draw skeleton
 
