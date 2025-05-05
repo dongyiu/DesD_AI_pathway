@@ -75,11 +75,57 @@ staff_two.save()
 
 # """
 
-for i in range(1, 20):
+
+"""
+Creating test cases for assignment
+1 - 1 AI engineer
+Dr First
+
+
+2 - 1 administrator A.N. Admin
+
+3 - 10 clients with realistic name
+Mr Rob Smith
+Ms Liz Brown
+Mr Hesitant
+
+"""
+AIEngineer = User.objects.create_user(username='AIEngineer', password='AIEngineer')
+AIEngineer.groups.add(ai_engineer_group)
+AIEngineer.save()
+AIEngineer.profile.title = 'Dr'
+AIEngineer.profile.forename = 'First'
+AIEngineer.profile.save()
+
+AdminOne = User.objects.create_user(username='AdminOne', password='AdminOne')
+AdminOne.groups.add(admin_group)
+AdminOne.save()
+AdminOne.profile.title = 'A.N.'
+AdminOne.profile.forename = 'Admin'
+AdminOne.profile.save()
+
+titles = ['Mr', 'Mrs', 'Ms', 'Dr', 'Prof']
+first_names = ['John', 'Jane', 'Michael', 'Yahia', 'Amin', 'Yasine', 'Dong', 'Cole', 'Thomas', 'Mary']
+last_names = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Miller', 'Davis', 'Wilson', 'Taylor', 'Clark']
+
+# Get or create the customer group
+customer_group, created = Group.objects.get_or_create(name='Customer')
+
+# Create users with profiles
+for i in range(1, len(first_names) + 1):
+    # Create user
     user = User.objects.create_user(username=f'user_{i}', password=f'user_{i}')
-    print(f'User {i} created successfully')
+    
+    # Add user to customer group
     user.groups.add(customer_group)
     user.save()
+    
+    user.profile.title = random.choice(titles)
+    user.profile.forename = random.choice(first_names)
+    user.profile.surname = random.choice(last_names)
+    user.profile.save()
+    
+    print(f'User {i} created successfully: {user.profile.title} {user.profile.forename} {user.profile.surname}')
 
 
 

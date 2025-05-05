@@ -1,41 +1,85 @@
-services:
-  backend:
-    build:
-      context: ./backend  
-    ports:
-      - "8000:8000"  
-    env_file:
-      - .env  
-    depends_on:
-      - db  
+# services:
+#   backend:
+#     build:
+#       context: ./backend  
+#     ports:
+#       - "8000:8000"  
+#     env_file:
+#       - .env  
+#     depends_on:
+#       - db  
     
-  frontend:
-    build:
-      context: ./frontend  
-    ports:
-      - "80:80"  
+#   # frontend:
+#   #   build:
+#   #     context: ./frontend  
+#   #   ports:
+#   #     - "80:80"  
 
-  ai:
-    build:
-      context: ./AI  
-    ports:
-      - "8001:8001"  
-    depends_on:
-      - backend
+  # ai:
+  #   build:
+  #     context: ./AI  
+  #   ports:
+  #     - "8001:8001"  
+  #   depends_on:
+  #     - backend
+  #   environment:
+  #     - FLASK_ENV=development
+
+#   db:  # This is the service name Django will use by default
+#     image: postgres:latest
+#     container_name: postgres-container
+#     environment:
+#       POSTGRES_USER: ${DB_USER}
+#       POSTGRES_PASSWORD: ${DB_PASSWORD}
+#       POSTGRES_DB: ${DB_NAME}
+#     ports:
+#       - "5432:5432"
+#     volumes:
+#       - postgres-data:/var/lib/postgresql/data
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+#       interval: 5s
+#       timeout: 5s
+#       retries: 5
+
+# volumes:
+#   postgres-data: 
+services:
+  postgres-container:
+    image: postgres:17.4
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     environment:
-      - FLASK_ENV=development
+      POSTGRES_DB: desd_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
 
-  db:
-    image: postgres:latest 
-    container_name: postgres-container 
-    environment:
-      POSTGRES_USER: ${DB_USER} 
-      POSTGRES_PASSWORD: ${DB_PASSWORD}  
-      POSTGRES_DB: ${DB_NAME} 
-    ports:
-      - "5432:5432"  
-    volumes:
-      - postgres-data:/var/lib/postgresql/data  
+  backend:
+   build:
+    context: ./backend  
+   ports:
+    - "8000:8000"
+   env_file:
+    - .env
+   depends_on:
+      postgres-container:
+        condition: service_healthy
 
-volumes:
-  postgres-data: 
+  # frontend:
+  #   build:
+  #     context: ./frontend  
+  #   ports:
+  #     - "80:80" 
+
+  # ai:
+  #   build:
+  #     context: ./AI  
+  #   ports:
+  #     - "8001:8001"  
+  #   depends_on:
+  #     - backend
+  #   environment:
+  #     - FLASK_ENV=development

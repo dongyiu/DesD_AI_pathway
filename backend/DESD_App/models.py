@@ -6,11 +6,32 @@ from django.utils import timezone
 import uuid
 
 class UserProfile(models.Model):
+    TITLE_CHOICES = [
+        ('Mr', 'Mr.'),
+        ('Mrs', 'Mrs.'),
+        ('Ms', 'Ms.'),
+        ('Dr', 'Dr.'),
+        ('Prof', 'Prof.'),
+        ('AN', 'A.N.'),
+    ]#first value is the value stored in the database, second value is the human-readable name
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     is_approved = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    forename = models.CharField(max_length=150, blank=True)
+    surname = models.CharField(max_length=150, blank=True)
+    title = models.CharField(max_length=6, choices=TITLE_CHOICES, blank=True)
+
+    def clean(self):
+        # Check if user with 'AN' title is an admin/superuser
+        if self.title == 'AN' and not self.user.is_superuser:
+            raise ValidationError({'title': 'Error: Only administrators can use this title.'})
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+        
     def __str__(self):
         return f'{self.user.username} Profile'
 
