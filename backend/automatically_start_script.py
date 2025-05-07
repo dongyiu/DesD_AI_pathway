@@ -75,14 +75,24 @@ ChatGPT = create_user_if_not_exists('ChatGPT', 'ChatGPT', groups=[ai_engineer_gr
 staff_two = create_user_if_not_exists('Yahia2025', 'Yahia2025', groups=[admin_group])
 Admin_user = create_user_if_not_exists('Admin', 'Admin', email='admin@ufcfur_15_3.com', groups=[admin_group])
 First_name = create_user_if_not_exists('First', 'First', email='first.name@ufcfur_15_3.com', groups=[ai_engineer_group])
-Tensa_name = create_user_if_not_exists('Tensa', 'Tensa', email='tensa.flow@ufcfur_15_3.com', groups=[ai_engineer_group])
+# Tensa_name = create_user_if_not_exists('Tensa', 'Tensa', email='tensa.flow@ufcfur_15_3.com', groups=[ai_engineer_group])
 
 # Create client users
 list_users = [
+
     {'username': 'Rob', 'password': 'Rob', 'email':'rob.smith@example.com', 'group': customer_group},
     {'username': 'Liz', 'password': 'Liz', 'email':'liz.brown@example.com', 'group': customer_group},
     {'username': 'Hesitant', 'password': 'Hesitant', 'email':'hesitant@example.com', 'group': customer_group},
-    {'username': 'Edmond', 'password': 'Edmond', 'email':'edmond.hobbs@darknet.com', 'group': customer_group}
+    {'username': 'Edmond', 'password': 'Edmond', 'email':'edmond.hobbs@darknet.com', 'group': customer_group},
+    {'username': 'Ahmed', 'password': 'Ahmed', 'email':'Ahmed.moh@example.com', 'group': customer_group},
+    {'username': 'Mike', 'password': 'Mike', 'email':'Mike.meh@example.com', 'group': customer_group},
+    {'username': 'Nathan', 'password': 'Nathan', 'email':'Nathan.hob@example.com', 'group': customer_group},
+    {'username': 'Omar', 'password': 'Omar', 'email':'Omar.ahmed@example.com', 'group': customer_group},
+    {'username': 'Mark', 'password': 'Mark', 'email':'Mark.shon@example.com', 'group': customer_group},
+    {'username': 'John', 'password': 'John', 'email':'John.sehn@example.com', 'group': customer_group}
+
+
+
 ]
 
 for user_instance in list_users:
