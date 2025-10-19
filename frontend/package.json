@@ -26,8 +26,7 @@
     "react-player": "^2.16.0",
     "react-router-dom": "^7.2.0",
     "recharts": "^2.15.3",
-    "socket.io-client": "^4.7.2",
-    "react-body-highlighter": "^2.0.5"
+    "socket.io-client": "^4.7.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
