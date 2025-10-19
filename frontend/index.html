@@ -5,8 +5,8 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vite + React</title>
-    <!-- Load environment variables -->
-    <script src="/env-config.js"></script>
+    <!-- Load environment variables (optional, for Docker only) -->
+    <script src="/env-config.js" onerror="console.log('env-config.js not found, using build-time env vars')"></script>
   </head>
   <body>
     <div id="root"></div>
