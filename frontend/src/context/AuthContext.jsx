@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }) => {
       const fetchUserData = async () => {
         try {
           // First try to get user data from auth endpoint
-          const authRes = await axios.get(`${API_URL}auth/users/me/`, {
+          const authRes = await axios.get(`${API_URL}/auth/users/me/`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           
@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }) => {
           
           // Then get more detailed profile data from my_account endpoint
           try {
-            const profileRes = await axios.get(`${API_URL}api/my_account/`, {
+            const profileRes = await axios.get(`${API_URL}/api/my_account/`, {
               headers: { Authorization: `Bearer ${token}` }
             });
             
@@ -133,7 +133,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       console.log("AuthContext: Attempting login");
-      const response = await axios.post(`${API_URL}auth/jwt/create/`, { username, password });
+      const response = await axios.post(`${API_URL}/auth/jwt/create/`, { username, password });
       const accessToken = response.data.access;
       const refreshToken = response.data.refresh;
       localStorage.setItem('access_token', accessToken);
@@ -155,7 +155,7 @@ export const AuthProvider = ({ children }) => {
       console.log("AuthContext: Attempting registration with role:", role);
       
       // Use our custom register endpoint that handles role assignment
-      const response = await axios.post(`${API_URL}api/register/`, {
+      const response = await axios.post(`${API_URL}/api/register/`, {
         email,
         username,
         password,
@@ -181,7 +181,7 @@ export const AuthProvider = ({ children }) => {
     if (!token) return false;
     
     try {
-      const response = await axios.get(`${API_URL}api/my_account/`, {
+      const response = await axios.get(`${API_URL}/api/my_account/`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
