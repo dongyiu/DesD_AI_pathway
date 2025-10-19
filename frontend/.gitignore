@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Environment config (for Docker runtime, not for git)
+public/env-config.js
+.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
