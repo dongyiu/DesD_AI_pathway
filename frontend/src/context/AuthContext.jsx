@@ -1,8 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
-
-// Use relative URL instead of hardcoded localhost address
-const API_URL = '/';
+import { API_URL } from '../config';
 
 // Create a more robust singleton pattern
 export const AuthContext = createContext(null);
