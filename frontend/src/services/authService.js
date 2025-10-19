@@ -39,7 +39,7 @@ apiClient.interceptors.response.use(
           return Promise.reject(error);
         }
         
-        const response = await axios.post(`${API_URL}auth/jwt/refresh/`, {
+        const response = await axios.post(`${API_URL}/auth/jwt/refresh/`, {
           refresh: refreshToken
         });
         
