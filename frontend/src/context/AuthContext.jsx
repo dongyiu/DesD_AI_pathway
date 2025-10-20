@@ -26,6 +26,8 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('access_token') || null);
   // Add loading state to track when auth is fully initialized
   const [loading, setLoading] = useState(!!token);
+  // Add guest mode state
+  const [isGuestMode, setIsGuestMode] = useState(localStorage.getItem('guest_mode') === 'true');
 
   // Store the state setters in global variables to ensure singleton pattern
   useEffect(() => {
@@ -193,13 +195,24 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Function to continue as guest
+  const continueAsGuest = () => {
+    console.log("AuthContext: Continuing as guest");
+    localStorage.setItem('guest_mode', 'true');
+    setIsGuestMode(true);
+    setUser({ username: 'Guest', isGuest: true });
+    setLoading(false);
+  };
+
   // Logout clears tokens and user state.
   const logout = () => {
     console.log("AuthContext: Logging out");
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    localStorage.removeItem('guest_mode');
     setToken(null);
     setUser(null);
+    setIsGuestMode(false);
     setLoading(false);
   };
 
@@ -208,10 +221,12 @@ export const AuthProvider = ({ children }) => {
     user,
     token,
     loading,
+    isGuestMode,
     login,
     logout,
     register,
     checkApprovalStatus,
+    continueAsGuest,
     setUser
   };
 

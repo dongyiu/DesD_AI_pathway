@@ -12,7 +12,7 @@ import { useAuth } from '../context/AuthContext'; // Add this import
 import { subscriptionService, usageService, lastViewedExerciseService } from '../services/apiService';
 import axios from 'axios';
 import { API_URL, AI_URL } from '../config';
-
+import { UserCircle } from 'lucide-react';
 // Lucide icons for a more consistent look
 import { 
   FullscreenIcon, 
@@ -757,10 +757,11 @@ const InfoPanel = ({
 // --- Main TrainingPage Component ---
 const TrainingPage = () => {
   const navigate = useNavigate();
-  const { token } = useAuth(); // Get auth token from context
+  const { token, isGuestMode } = useAuth(); // Get auth token and guest mode from context
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [hasSubscription, setHasSubscription] = useState(true); // Add this state
   const [isLoadingSubscription, setIsLoadingSubscription] = useState(true); // Add this state
+  const [showCameraPermission, setShowCameraPermission] = useState(false); // Camera permission modal
   const webcamRef = useRef(null);
   const canvasRef = useRef(null);
   const [userLandmarksForDrawing, setUserLandmarksForDrawing] = useState(null);
@@ -932,9 +933,9 @@ const TrainingPage = () => {
     
     // Also update the ref to ensure synchronous blocking of future changes
     nextAllowedChangeTimeRef.current = Date.now() + NOTIFICATION_COOLDOWN;
-    
-    // If user is authenticated, update the last viewed exercise in the backend
-    if (token) {
+
+    // If user is authenticated (not guest), update the last viewed exercise in the backend
+    if (token && !isGuestMode) {
       // Update the last viewed exercise record
       lastViewedExerciseService.updateLastViewed({
         workout_type: parsedId,
@@ -947,9 +948,10 @@ const TrainingPage = () => {
         console.error('[LastViewed] Error updating last viewed exercise:', error);
       });
     }
-    
-    // If we have an active session, update the workout type in the session tracking
-    if (sessionId && token) {
+
+
+    // If we have an active session (not guest), update the workout type in the session tracking
+    if (sessionId && token && !isGuestMode) {
       // Convert workout map to a format with string keys for better JSON compatibility
       const stringWorkoutMap = {};
       Object.entries(workoutMap).forEach(([key, value]) => {
@@ -1193,10 +1195,13 @@ const TrainingPage = () => {
         transports: ['websocket']
       };
       
-      // Add auth token if available
+      // Add auth token if available, or mark as guest
       if (token) {
         console.log('[Socket Setup] Adding auth token to connection');
         socketOptions.auth = { token };
+      } else if (isGuestMode) {
+        console.log('[Socket Setup] Connecting as guest user');
+        socketOptions.auth = { guest: true };
       } else {
         console.log('[Socket Setup] No auth token available');
       }
@@ -1357,11 +1362,11 @@ const TrainingPage = () => {
     };
     
     connectSocket();
-    
+
     // Send final session stats when component unmounts
-    return () => { 
-      // Report final session stats if we have an active session
-      if (sessionId && token) {
+    return () => {
+      // Report final session stats if we have an active session (skip for guests)
+      if (sessionId && token && !isGuestMode) {
         console.log('[Component Unmount] Reporting final stats for session:', sessionId);
         reportFinalSessionStats();
       }
@@ -1386,10 +1391,10 @@ const TrainingPage = () => {
       if (socketRef.current) { 
         console.log("[Socket Cleanup] Disconnecting WebSocket."); 
         socketRef.current.disconnect(); 
-        socketRef.current = null; 
-      } 
+        socketRef.current = null;
+      }
     };
-  }, [token]); // Add token as dependency
+  }, [token, isGuestMode]); // Add token and isGuestMode as dependencies
 
   // Function to report final session stats
   const reportFinalSessionStats = () => {
@@ -1467,6 +1472,12 @@ const TrainingPage = () => {
 
   // Update the useEffect that handles periodic session stats reporting
   useEffect(() => {
+    // Skip session tracking for guest users
+    if (isGuestMode) {
+      console.log('[Session] Skipping session tracking for guest user');
+      return;
+    }
+
     if (!sessionId || !token) {
       console.log('[Session] Missing sessionId or token for automatic updates');
       return;
@@ -1557,10 +1568,16 @@ const TrainingPage = () => {
       console.log('[Session] Clearing periodic stats reporting interval');
       clearInterval(reportInterval);
     };
-  }, [sessionId, token, sessionStartTime]); // Add sessionStartTime to dependencies
+  }, [sessionId, token, sessionStartTime, isGuestMode]); // Add sessionStartTime and isGuestMode to dependencies
 
   // Add a new function to manually force-update usage stats
   const forceUpdateUsageStats = () => {
+    // Skip for guest users
+    if (isGuestMode) {
+      console.log('[Session] Skipping stats update for guest user');
+      return;
+    }
+
     if (!sessionId || !token) {
       console.warn('[Session] Cannot force update: Missing session ID or token');
       return;
@@ -1920,6 +1937,12 @@ const TrainingPage = () => {
 
   // Add this function to manually start a session on the backend
   const startSessionOnBackend = (clientId) => {
+    // Skip session creation for guest users
+    if (isGuestMode) {
+      console.log('[Session] Skipping session creation for guest user');
+      return;
+    }
+
     // Make sure we're authenticated first
     if (!token) {
       console.log('[Session] Cannot start session - not authenticated');
@@ -2076,6 +2099,14 @@ const TrainingPage = () => {
   // Add subscription check effect
   useEffect(() => {
     const checkSubscription = async () => {
+      // Skip subscription check for guest users
+      if (isGuestMode) {
+        setHasSubscription(true);
+        setIsLoadingSubscription(false);
+        setShowCameraPermission(true); // Show camera permission modal for guests
+        return;
+      }
+
       if (!token) {
         setHasSubscription(false);
         setIsLoadingSubscription(false);
@@ -2100,7 +2131,7 @@ const TrainingPage = () => {
     };
 
     checkSubscription();
-  }, [token]);
+  }, [token, isGuestMode]);
 
   // Add navigation handlers
   const handleGoHome = () => {
@@ -2111,8 +2142,26 @@ const TrainingPage = () => {
     navigate('/settings?page=billing');
   };
 
+  // Camera permission handlers
+  const handleAcceptCamera = () => {
+    setShowCameraPermission(false);
+    // Camera will be accessed by MediaPipe automatically
+  };
+
+  const handleDeclineCamera = () => {
+    setShowCameraPermission(false);
+    navigate('/'); // Redirect to home if camera is declined
+  };
+
   // Add useEffect to load last viewed exercise when component mounts
   useEffect(() => {
+    // Skip for guest users - use default workout
+    if (isGuestMode) {
+      console.log('[LastViewed] Guest mode - using default workout (Plank)');
+      setCurrentWorkout(12); // Default to plank
+      return;
+    }
+
     // Only fetch if user is authenticated
     if (token) {
       lastViewedExerciseService.getLastViewed()
@@ -2140,7 +2189,7 @@ const TrainingPage = () => {
       // Not logged in, use default
       setCurrentWorkout(12);
     }
-  }, [token]);
+  }, [token, isGuestMode]);
 
   // --- Render ---
   return (
@@ -2155,11 +2204,22 @@ const TrainingPage = () => {
       transition={{ duration: 0.5 }}
     >
       {!isFullscreen && <NavBar isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />}
-      
+
+      {/* Show camera permission modal for guest users */}
+      <AnimatePresence>
+        {showCameraPermission && (
+          <CameraPermissionModal
+            isDarkMode={isDarkMode}
+            onAccept={handleAcceptCamera}
+            onDecline={handleDeclineCamera}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Show subscription prompt if no subscription */}
       <AnimatePresence>
         {!isLoadingSubscription && !hasSubscription && (
-          <SubscriptionPrompt 
+          <SubscriptionPrompt
             isDarkMode={isDarkMode}
             onGoHome={handleGoHome}
             onGoToSubscription={handleGoToSubscription}
@@ -2231,6 +2291,21 @@ const TrainingPage = () => {
             {/* All UI controls positioned consistently */}
             <ConnectionStatus status={connectionStatus} />
             <FullscreenButton isFullscreen={isFullscreen} toggleFullscreen={toggleFullscreen} />
+
+            {/* Guest Mode Indicator */}
+            {isGuestMode && (
+              <motion.div
+                className="absolute top-4 right-48 z-40"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="flex items-center space-x-2 bg-purple-600/60 backdrop-blur-sm text-white px-3 py-2 rounded-lg shadow-lg border border-purple-500/30">
+                  <UserCircle className="w-4 h-4" />
+                  <span className="text-xs font-medium">Guest Mode</span>
+                </div>
+              </motion.div>
+            )}
             
             {/* WorkoutSelector always in same position */}
             <div className="absolute top-4 left-16 z-40">
@@ -2304,6 +2379,119 @@ const TrainingPage = () => {
 };
 
 export default TrainingPage;
+
+// Add Camera Permission Modal component
+const CameraPermissionModal = ({ isDarkMode, onAccept, onDecline }) => {
+  const githubRepoUrl = "https://github.com/dongyiu/DesD_AI_pathway"; // Update with your actual repo URL
+
+  return (
+    <motion.div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${
+        isDarkMode ? 'bg-black/80' : 'bg-white/80'
+      } backdrop-blur-sm`}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        className={`${
+          isDarkMode
+            ? 'bg-gray-800 border border-white/10'
+            : 'bg-white border border-gray-200'
+        } rounded-xl p-6 max-w-lg w-full shadow-xl`}
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20 }}
+      >
+        <div className="text-center mb-6">
+          <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
+            isDarkMode ? 'bg-purple-500/20' : 'bg-purple-100'
+          }`}>
+            <Eye className={`w-8 h-8 ${
+              isDarkMode ? 'text-purple-400' : 'text-purple-600'
+            }`} />
+          </div>
+          <h2 className={`text-2xl font-semibold mb-2 ${
+            isDarkMode ? 'text-white' : 'text-gray-800'
+          }`}>
+            Camera Access Required
+          </h2>
+          <p className={`text-sm mb-4 ${
+            isDarkMode ? 'text-gray-300' : 'text-gray-600'
+          }`}>
+            We need access to your camera to track your workout form in real-time.
+          </p>
+        </div>
+
+        <div className={`p-4 rounded-lg mb-6 ${
+          isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'
+        }`}>
+          <h3 className={`font-semibold mb-2 flex items-center ${
+            isDarkMode ? 'text-white' : 'text-gray-800'
+          }`}>
+            <Info className="w-4 h-4 mr-2" />
+            Privacy & Security
+          </h3>
+          <ul className={`text-sm space-y-2 ${
+            isDarkMode ? 'text-gray-300' : 'text-gray-600'
+          }`}>
+            <li className="flex items-start">
+              <Check className="w-4 h-4 mr-2 mt-0.5 text-green-500 flex-shrink-0" />
+              <span><strong>No video storage:</strong> We do not record, store, or save any video data from your camera.</span>
+            </li>
+            <li className="flex items-start">
+              <Check className="w-4 h-4 mr-2 mt-0.5 text-green-500 flex-shrink-0" />
+              <span><strong>Real-time processing:</strong> All pose detection happens locally in your browser.</span>
+            </li>
+            <li className="flex items-start">
+              <Check className="w-4 h-4 mr-2 mt-0.5 text-green-500 flex-shrink-0" />
+              <span><strong>Open source:</strong> Our code is publicly available on{' '}
+                <a
+                  href={githubRepoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`underline ${
+                    isDarkMode ? 'text-purple-400 hover:text-purple-300' : 'text-purple-600 hover:text-purple-700'
+                  }`}
+                >
+                  GitHub
+                </a> for transparency.
+              </span>
+            </li>
+          </ul>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={onDecline}
+            className={`flex-1 py-2.5 px-4 rounded-lg font-medium ${
+              isDarkMode
+                ? 'bg-gray-700 hover:bg-gray-600 text-white'
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+            }`}
+          >
+            Decline
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={onAccept}
+            className={`flex-1 py-2.5 px-4 rounded-lg font-medium ${
+              isDarkMode
+                ? 'bg-purple-600 hover:bg-purple-500 text-white'
+                : 'bg-purple-600 hover:bg-purple-500 text-white'
+            }`}
+          >
+            Allow Camera Access
+          </motion.button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
 
 // Add new SubscriptionPrompt component
 const SubscriptionPrompt = ({ isDarkMode, onGoHome, onGoToSubscription }) => {
