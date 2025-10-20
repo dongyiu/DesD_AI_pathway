@@ -14,23 +14,27 @@ import axios from 'axios';
 import { API_URL, AI_URL } from '../config';
 import { UserCircle } from 'lucide-react';
 // Lucide icons for a more consistent look
-import { 
-  FullscreenIcon, 
-  MinimizeIcon, 
-  XCircle, 
-  Check, 
-  AlertTriangle, 
-  Info, 
-  Eye, 
-  EyeOff, 
-  RefreshCw, 
-  ChevronDown, 
-  ChevronUp, 
+import {
+  FullscreenIcon,
+  MinimizeIcon,
+  XCircle,
+  Check,
+  AlertTriangle,
+  Info,
+  Eye,
+  EyeOff,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
   Zap
 } from 'lucide-react';
 
 // Import NavBar
 import NavBar from '../components/Navbar';
+
+// Import Mobile Components
+import { useIsMobile } from '../hooks/useIsMobile';
+import MobileLayout from '../components/mobile/MobileLayout';
 
 // Add workout mapping (matching the backend)
 const workoutMap = { 
@@ -757,7 +761,13 @@ const InfoPanel = ({
 // --- Main TrainingPage Component ---
 const TrainingPage = () => {
   const navigate = useNavigate();
-  const { token, isGuestMode } = useAuth(); // Get auth token and guest mode from context
+  const { token, isGuestMode, user, logout } = useAuth(); // Get auth token, guest mode, user, and logout from context
+
+  // Logout handler
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [hasSubscription, setHasSubscription] = useState(true); // Add this state
   const [isLoadingSubscription, setIsLoadingSubscription] = useState(true); // Add this state
@@ -800,9 +810,26 @@ const TrainingPage = () => {
   
   // Add state for tracking session duration
   const [sessionDuration, setSessionDuration] = useState(0);
-  
+
   // Add state for muscle visualizer toggle
   const [showMuscleVisualizer, setShowMuscleVisualizer] = useState(true);
+
+  // Mobile detection and mobile-specific state
+  const isMobile = useIsMobile();
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showWorkoutModal, setShowWorkoutModal] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // Debug: Log mobile detection
+  useEffect(() => {
+    console.log('[Mobile Detection]', {
+      isMobile,
+      width: window.innerWidth,
+      height: window.innerHeight,
+      isPortrait: window.innerHeight > window.innerWidth,
+      touch: 'ontouchstart' in window || navigator.maxTouchPoints > 0
+    });
+  }, [isMobile]);
   
   // Modified workout prediction state
   const [predictedWorkout, setPredictedWorkout] = useState(12); // Default to plank (12)
@@ -1672,7 +1699,8 @@ const TrainingPage = () => {
 
   // Modify the send interval to include the selected workout type
   useEffect(() => {
-    const sendIntervalDelay = 50;
+    // Mobile optimization: reduce send frequency to save battery (10 FPS vs 20 FPS)
+    const sendIntervalDelay = isMobile ? 100 : 50;
     if (sendIntervalRef.current) { clearInterval(sendIntervalRef.current); }
     console.log(`[Data Send] Setting up interval to send data every ${sendIntervalDelay}ms`);
     sendIntervalRef.current = setInterval(() => {
@@ -1707,15 +1735,15 @@ const TrainingPage = () => {
         console.warn('[Data Send] No landmarks to send');
       }
     }, sendIntervalDelay);
-    
-    return () => { 
-      if (sendIntervalRef.current) { 
-        console.log("[Data Send] Clearing send interval."); 
-        clearInterval(sendIntervalRef.current); 
-        sendIntervalRef.current = null; 
-      } 
+
+    return () => {
+      if (sendIntervalRef.current) {
+        console.log("[Data Send] Clearing send interval.");
+        clearInterval(sendIntervalRef.current);
+        sendIntervalRef.current = null;
+      }
     };
-  }, [currentWorkout]); // Add currentWorkout as a dependency
+  }, [currentWorkout, isMobile]); // Add currentWorkout and isMobile as dependencies
 
   // --- Correction Timeout Check ---
   useEffect(() => {
@@ -1816,9 +1844,28 @@ const TrainingPage = () => {
         if (!canvas || !webcamRef.current) { return; }
         const ctx = canvas.getContext('2d');
         if (!ctx) { return; }
+
+        // Get video natural dimensions and displayed dimensions
         const videoWidth = webcamRef.current.videoWidth;
         const videoHeight = webcamRef.current.videoHeight;
+        const rect = webcamRef.current.getBoundingClientRect();
+
         if (videoWidth === 0 || videoHeight === 0) { return; }
+
+        // Debug logging - log every time to diagnose the issue
+        if (canvas.width !== videoWidth || canvas.height !== videoHeight) {
+            console.log('[Canvas Sizing]', {
+                videoNatural: `${videoWidth}x${videoHeight}`,
+                videoAspect: (videoWidth / videoHeight).toFixed(2),
+                displaySize: `${rect.width.toFixed(0)}x${rect.height.toFixed(0)}`,
+                displayAspect: (rect.width / rect.height).toFixed(2),
+                isMobile,
+                canvasWillBe: `${videoWidth}x${videoHeight}`
+            });
+        }
+
+        // Set canvas to match video's natural dimensions
+        // MediaPipe landmarks are normalized to video dimensions, not display size
         if (canvas.width !== videoWidth) canvas.width = videoWidth;
         if (canvas.height !== videoHeight) canvas.height = videoHeight;
 
@@ -1857,7 +1904,22 @@ const TrainingPage = () => {
 
     const startMediaPipe = async () => {
         if (typeof window === 'undefined' || !webcamRef.current) {
-            console.log("[MediaPipe Setup] Aborted: window or webcamRef not ready."); 
+            console.log("[MediaPipe Setup] Aborted: window or webcamRef not ready.");
+            return;
+        }
+
+        // Check if camera API is available (required for HTTPS or localhost)
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            console.error("[MediaPipe Setup] Camera API not available. This typically happens when:");
+            console.error("1. Using HTTP instead of HTTPS on mobile");
+            console.error("2. Browser doesn't support getUserMedia");
+            alert(
+              "Camera access requires HTTPS.\n\n" +
+              "Options:\n" +
+              "• Use a browser that supports camera on this page\n" +
+              "• Deploy with HTTPS\n" +
+              "• Use localhost (desktop only)"
+            );
             return;
         }
         console.log("[MediaPipe Setup] Initializing Pose...");
@@ -1865,12 +1927,13 @@ const TrainingPage = () => {
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose@${poseDetection.VERSION}/${file}`
         });
         poseInstanceRef.current = pose;
-        pose.setOptions({ 
-          modelComplexity: 1, 
-          smoothLandmarks: true, 
-          enableSegmentation: false, 
-          minDetectionConfidence: 0.5, 
-          minTrackingConfidence: 0.5 
+        // Mobile optimization: use lite model (0) on mobile for better performance
+        pose.setOptions({
+          modelComplexity: isMobile ? 0 : 1,
+          smoothLandmarks: true,
+          enableSegmentation: false,
+          minDetectionConfidence: isMobile ? 0.6 : 0.5,
+          minTrackingConfidence: isMobile ? 0.6 : 0.5
         });
         pose.onResults(onResults);
 
@@ -1884,20 +1947,53 @@ const TrainingPage = () => {
                   return; 
                 }
                 console.log("[MediaPipe Setup] Setting up Camera...");
-                const camera = new Camera(webcamRef.current, {
-                    onFrame: async () => {
-                        if (poseInstanceRef.current && webcamRef.current) {
-                            try { 
-                              await poseInstanceRef.current.send({ image: webcamRef.current }); 
-                            }
-                            catch (sendError) { 
-                              console.error("[MediaPipe onFrame] Error sending frame:", sendError); 
-                            }
-                        }
-                    },
-                    width: 640, 
-                    height: 480
+                // Smart camera resolution based on display aspect ratio
+                const isPortrait = window.innerHeight > window.innerWidth;
+                const isNarrow = window.innerWidth < 768;
+
+                // Calculate target aspect ratio from display
+                const displayAspect = window.innerWidth / window.innerHeight;
+
+                // Choose camera resolution that best matches display aspect
+                let cameraWidth, cameraHeight;
+                if (isPortrait && isNarrow) {
+                  // Mobile portrait: use 720x1280 (9:16)
+                  cameraWidth = 720;
+                  cameraHeight = 1280;
+                } else if (displayAspect > 1.5) {
+                  // Wide landscape (like iPad landscape): use 1280x720 (16:9)
+                  cameraWidth = 1280;
+                  cameraHeight = 720;
+                } else {
+                  // Standard landscape or square-ish: use 640x480 (4:3)
+                  cameraWidth = 640;
+                  cameraHeight = 480;
+                }
+
+                console.log('[Camera Config]', {
+                  isPortrait,
+                  isNarrow,
+                  displayDimensions: `${window.innerWidth}x${window.innerHeight}`,
+                  displayAspect: displayAspect.toFixed(2),
+                  requestedRes: `${cameraWidth}x${cameraHeight}`,
+                  requestedAspect: (cameraWidth / cameraHeight).toFixed(2)
                 });
+
+                const cameraConfig = {
+                  onFrame: async () => {
+                    if (poseInstanceRef.current && webcamRef.current) {
+                      try {
+                        await poseInstanceRef.current.send({ image: webcamRef.current });
+                      }
+                      catch (sendError) {
+                        console.error("[MediaPipe onFrame] Error sending frame:", sendError);
+                      }
+                    }
+                  },
+                  width: cameraWidth,
+                  height: cameraHeight
+                };
+                const camera = new Camera(webcamRef.current, cameraConfig);
                 cameraInstanceRef.current = camera;
                 await camera.start();
                 console.log("[MediaPipe Setup] Camera started successfully.");
@@ -2191,19 +2287,41 @@ const TrainingPage = () => {
     }
   }, [token, isGuestMode]);
 
+  // Portrait orientation lock for mobile devices
+  useEffect(() => {
+    if (!isMobile) return;
+
+    // Try to lock to portrait orientation
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('portrait-primary').catch(err => {
+        console.log('[Orientation] Cannot lock to portrait:', err);
+        // Graceful degradation - orientation lock not supported
+        // The app will still work, just won't be locked
+      });
+    }
+
+    return () => {
+      // Unlock orientation when leaving the page or switching to desktop
+      if (screen.orientation && screen.orientation.unlock) {
+        screen.orientation.unlock();
+      }
+    };
+  }, [isMobile]);
+
   // --- Render ---
   return (
-    <motion.section 
+    <motion.section
       className={`min-h-screen overflow-hidden ${
-        isDarkMode 
-          ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-indigo-900' 
+        isDarkMode
+          ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-indigo-900'
           : 'bg-gradient-to-br from-gray-100 via-gray-100 to-indigo-100'
       }`}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      {!isFullscreen && <NavBar isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />}
+      {/* Hide navbar on mobile and when fullscreen */}
+      {!isMobile && !isFullscreen && <NavBar isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />}
 
       {/* Show camera permission modal for guest users */}
       <AnimatePresence>
@@ -2227,29 +2345,86 @@ const TrainingPage = () => {
         )}
       </AnimatePresence>
       
-      {/* Custom Notifications Container */}
-      <AnimatePresence>
-        {notifications.length > 0 && (
-          <motion.div 
-            className="fixed top-24 right-6 z-50 w-80 max-w-[90%]"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            {notifications.map(notification => (
-              <CustomNotification
-                key={notification.id}
-                type={notification.type}
-                message={notification.message}
-                onClose={() => removeNotification(notification.id)}
-              />
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
-      <motion.main 
+      {/* Conditional Layout: Mobile vs Desktop */}
+      {isMobile ? (
+        /* Mobile Layout */
+        <MobileLayout
+          // Workout data
+          currentWorkout={currentWorkout}
+          predictedWorkout={predictedWorkout}
+          predictionConfidence={predictionConfidence}
+          predictionThreshold={SUGGESTION_THRESHOLD}
+          predictedMuscleGroup={predictedMuscleGroup}
+          muscleGroupConfidence={muscleGroupConfidence}
+          workoutMap={workoutMap}
+          muscleGroupMap={muscleGroupMap}
+
+          // Connection & Status
+          connectionStatus={connectionStatus}
+          isGuestMode={isGuestMode}
+          sessionDuration={sessionDuration}
+          receivedCount={receivedCount}
+          feedbackLatency={feedbackLatency}
+          pendingUpdates={pendingStatsRef.current ?
+            pendingStatsRef.current.framesProcessed + pendingStatsRef.current.correctionsSent : 0}
+
+          // Refs
+          webcamRef={webcamRef}
+          canvasRef={canvasRef}
+
+          // UI State
+          showMobileMenu={showMobileMenu}
+          setShowMobileMenu={setShowMobileMenu}
+          showWorkoutModal={showWorkoutModal}
+          setShowWorkoutModal={setShowWorkoutModal}
+          isDrawerOpen={isDrawerOpen}
+          setIsDrawerOpen={setIsDrawerOpen}
+
+          // Settings
+          isDarkMode={isDarkMode}
+          toggleDarkMode={toggleDarkMode}
+          showMuscleVisualizer={showMuscleVisualizer}
+          toggleMuscleVisualizer={toggleMuscleVisualizer}
+
+          // Actions
+          handleWorkoutChange={handleWorkoutChange}
+          forceUpdateUsageStats={forceUpdateUsageStats}
+
+          // User
+          user={user}
+          handleLogout={handleLogout}
+
+          // Notifications
+          notifications={notifications}
+          removeNotification={removeNotification}
+          CustomNotification={CustomNotification}
+        />
+      ) : (
+        /* Desktop Layout (existing) */
+        <>
+          {/* Custom Notifications Container */}
+          <AnimatePresence>
+            {notifications.length > 0 && (
+              <motion.div
+                className="fixed top-24 right-6 z-50 w-80 max-w-[90%]"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                {notifications.map(notification => (
+                  <CustomNotification
+                    key={notification.id}
+                    type={notification.type}
+                    message={notification.message}
+                    onClose={() => removeNotification(notification.id)}
+                  />
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <motion.main 
         className={`${isFullscreen ? 'h-screen' : 'container mx-auto px-4 py-4 sm:py-6 max-w-5xl'}`}
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -2374,6 +2549,8 @@ const TrainingPage = () => {
           </div>
         </motion.div>
       </motion.main>
+        </>
+      )}
     </motion.section>
   );
 };

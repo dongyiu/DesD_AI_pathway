@@ -262,31 +262,31 @@ const WorkoutShowcase = ({ isDarkMode = false, navigate, continueAsGuest }) => {
     <div className="relative w-full max-w-7xl mx-auto">
       {/* Main Canvas Container */}
       <div className={`relative ${isDarkMode ? 'bg-gray-800/90' : 'bg-white/90'} rounded-2xl overflow-hidden shadow-2xl border ${isDarkMode ? 'border-white/20' : 'border-gray-300'}`}>
-        {/* Canvas */}
+        {/* Canvas - Responsive height */}
         <canvas
           ref={canvasRef}
           width={1200}
           height={600}
-          className="w-full h-auto"
+          className="w-full h-auto max-h-[400px] md:max-h-none"
         />
 
         {/* Detected Workout Badge */}
         <motion.div
-          className="absolute top-4 left-4 sm:top-6 sm:left-6 z-40"
+          className="absolute top-3 left-3 sm:top-6 sm:left-6 z-40"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
         >
           <div className={`${
             isDarkMode ? 'bg-purple-600/90' : 'bg-purple-600'
-          } backdrop-blur-sm text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg shadow-lg flex items-center space-x-2`}>
-            <Activity className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="text-sm sm:text-base font-semibold">{detectedWorkout}</span>
+          } backdrop-blur-sm text-white px-2.5 py-1 sm:px-4 sm:py-2 rounded-lg shadow-lg flex items-center space-x-1.5 sm:space-x-2`}>
+            <Activity className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+            <span className="text-xs sm:text-base font-semibold">{detectedWorkout}</span>
           </div>
         </motion.div>
 
-        {/* CTA Buttons - Center */}
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-40 flex flex-col sm:flex-row gap-4">
+        {/* CTA Buttons - Center on desktop, hidden on mobile */}
+        <div className="hidden md:flex absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-40 flex-row gap-4">
           <motion.button
             onClick={handleTryAsGuest}
             className={`bg-gradient-to-r ${isDarkMode ? 'from-purple-500 to-indigo-600' : 'from-indigo-500 to-purple-600'} text-white font-semibold py-4 px-8 rounded-lg shadow-xl hover:shadow-2xl transition duration-300 flex items-center justify-center space-x-2 text-lg`}
@@ -308,8 +308,8 @@ const WorkoutShowcase = ({ isDarkMode = false, navigate, continueAsGuest }) => {
           </motion.button>
         </div>
 
-        {/* Small Controls - Bottom Right */}
-        <div className="absolute bottom-4 right-4 z-40 flex space-x-2">
+        {/* Small Controls - Bottom Right (desktop only) */}
+        <div className="hidden md:flex absolute bottom-4 right-4 z-40 space-x-2">
           <motion.button
             onClick={handlePlayPause}
             className={`${
@@ -336,7 +336,7 @@ const WorkoutShowcase = ({ isDarkMode = false, navigate, continueAsGuest }) => {
         {/* Muscle Group Visualizers */}
         {/* Front view - Left side */}
         <motion.div
-          className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 z-30 pointer-events-none w-[100px] sm:w-[130px] md:w-[150px]"
+          className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 z-30 pointer-events-none w-[70px] sm:w-[100px] md:w-[150px]"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
@@ -351,7 +351,7 @@ const WorkoutShowcase = ({ isDarkMode = false, navigate, continueAsGuest }) => {
 
         {/* Back view - Right side */}
         <motion.div
-          className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 z-30 pointer-events-none w-[100px] sm:w-[130px] md:w-[150px]"
+          className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 z-30 pointer-events-none w-[70px] sm:w-[100px] md:w-[150px]"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
@@ -363,6 +363,54 @@ const WorkoutShowcase = ({ isDarkMode = false, navigate, continueAsGuest }) => {
             onClick={() => {}}
           />
         </motion.div>
+      </div>
+
+      {/* CTA Buttons - Below canvas on mobile only */}
+      <div className="md:hidden flex flex-col gap-3 mt-4 px-4">
+        <motion.button
+          onClick={handleTryAsGuest}
+          className={`bg-gradient-to-r ${isDarkMode ? 'from-purple-500 to-indigo-600' : 'from-indigo-500 to-purple-600'} text-white font-semibold py-3 px-6 rounded-lg shadow-xl hover:shadow-2xl transition duration-300 flex items-center justify-center space-x-2 text-base w-full`}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <Play className="w-4 h-4" />
+          <span>Try as Guest</span>
+        </motion.button>
+
+        <motion.button
+          onClick={handleGitHub}
+          className={`bg-transparent ${isDarkMode ? 'bg-white/10 hover:bg-white/20 text-white border-white/30' : 'bg-black/5 hover:bg-black/10 text-gray-800 border-gray-400'} font-semibold py-3 px-6 rounded-lg border-2 shadow-xl hover:shadow-2xl transition duration-300 flex items-center justify-center space-x-2 text-base backdrop-blur-sm w-full`}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <Github className="w-4 h-4" />
+          <span>View on GitHub</span>
+        </motion.button>
+
+        {/* Mobile Controls */}
+        <div className="flex justify-center space-x-2 mt-1">
+          <motion.button
+            onClick={handlePlayPause}
+            className={`${
+              isDarkMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-indigo-600 hover:bg-indigo-700'
+            } text-white p-2.5 rounded-lg shadow-lg`}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+          </motion.button>
+
+          <motion.button
+            onClick={handleReset}
+            className={`${
+              isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'
+            } ${isDarkMode ? 'text-white' : 'text-gray-800'} p-2.5 rounded-lg shadow-lg`}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <RotateCcw className="w-4 h-4" />
+          </motion.button>
+        </div>
       </div>
 
       {/* Feature Labels */}
