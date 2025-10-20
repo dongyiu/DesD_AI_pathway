@@ -6,7 +6,7 @@ import Model from 'react-body-highlighter';
 import { MuscleType, ModelType } from 'react-body-highlighter';
 import { AI_URL } from '../config';
 import { generateShoulderPressPose } from '../utils/syntheticPoseGenerator';
-import { Activity, Zap, Play, Pause, RotateCcw } from 'lucide-react';
+import { Activity, Zap, Play, Pause, RotateCcw, Github } from 'lucide-react';
 
 /**
  * Drawing utility functions
@@ -134,7 +134,7 @@ const drawCorrectionArrows = (ctx, landmarks, corrections, canvasWidth, canvasHe
  * Workout Showcase Component
  * Large demo with muscle visualization and AI detection
  */
-const WorkoutShowcase = ({ isDarkMode = false }) => {
+const WorkoutShowcase = ({ isDarkMode = false, navigate, continueAsGuest }) => {
   const canvasRef = useRef(null);
   const socketRef = useRef(null);
   const frameRef = useRef(0);
@@ -183,6 +183,19 @@ const WorkoutShowcase = ({ isDarkMode = false }) => {
   const handleReset = () => {
     frameRef.current = 0;
     setCorrections({});
+  };
+
+  const handleTryAsGuest = () => {
+    if (continueAsGuest) {
+      continueAsGuest();
+    }
+    if (navigate) {
+      navigate('/workout');
+    }
+  };
+
+  const handleGitHub = () => {
+    window.open('https://github.com/dongyiu/DesD_AI_pathway', '_blank');
   };
 
   // WebSocket setup
@@ -246,14 +259,14 @@ const WorkoutShowcase = ({ isDarkMode = false }) => {
   ];
 
   return (
-    <div className="relative w-full max-w-6xl mx-auto">
+    <div className="relative w-full max-w-7xl mx-auto">
       {/* Main Canvas Container */}
-      <div className={`relative ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl overflow-hidden shadow-2xl border ${isDarkMode ? 'border-white/10' : 'border-gray-200'}`}>
+      <div className={`relative ${isDarkMode ? 'bg-gray-800/90' : 'bg-white/90'} rounded-2xl overflow-hidden shadow-2xl border ${isDarkMode ? 'border-white/20' : 'border-gray-300'}`}>
         {/* Canvas */}
         <canvas
           ref={canvasRef}
-          width={1000}
-          height={400}
+          width={1200}
+          height={600}
           className="w-full h-auto"
         />
 
@@ -272,28 +285,51 @@ const WorkoutShowcase = ({ isDarkMode = false }) => {
           </div>
         </motion.div>
 
-        {/* Controls - Bottom Left */}
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-40 flex space-x-2">
+        {/* CTA Buttons - Center */}
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-40 flex flex-col sm:flex-row gap-4">
           <motion.button
-            onClick={handlePlayPause}
-            className={`${
-              isDarkMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-indigo-600 hover:bg-indigo-700'
-            } text-white p-2 rounded-lg shadow-lg`}
+            onClick={handleTryAsGuest}
+            className={`bg-gradient-to-r ${isDarkMode ? 'from-purple-500 to-indigo-600' : 'from-indigo-500 to-purple-600'} text-white font-semibold py-4 px-8 rounded-lg shadow-xl hover:shadow-2xl transition duration-300 flex items-center justify-center space-x-2 text-lg`}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+            <Play className="w-5 h-5" />
+            <span>Try as Guest</span>
+          </motion.button>
+
+          <motion.button
+            onClick={handleGitHub}
+            className={`bg-transparent ${isDarkMode ? 'bg-white/10 hover:bg-white/20 text-white border-white/30' : 'bg-black/5 hover:bg-black/10 text-gray-800 border-gray-400'} font-semibold py-4 px-8 rounded-lg border-2 shadow-xl hover:shadow-2xl transition duration-300 flex items-center justify-center space-x-2 text-lg backdrop-blur-sm`}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Github className="w-5 h-5" />
+            <span>View on GitHub</span>
+          </motion.button>
+        </div>
+
+        {/* Small Controls - Bottom Right */}
+        <div className="absolute bottom-4 right-4 z-40 flex space-x-2">
+          <motion.button
+            onClick={handlePlayPause}
+            className={`${
+              isDarkMode ? 'bg-purple-600/80 hover:bg-purple-700' : 'bg-indigo-600/80 hover:bg-indigo-700'
+            } text-white p-2 rounded-lg shadow-lg backdrop-blur-sm`}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
           </motion.button>
 
           <motion.button
             onClick={handleReset}
             className={`${
-              isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'
-            } ${isDarkMode ? 'text-white' : 'text-gray-800'} p-2 rounded-lg shadow-lg`}
+              isDarkMode ? 'bg-gray-700/80 hover:bg-gray-600' : 'bg-gray-200/80 hover:bg-gray-300'
+            } ${isDarkMode ? 'text-white' : 'text-gray-800'} p-2 rounded-lg shadow-lg backdrop-blur-sm`}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <RotateCcw className="w-5 h-5" />
+            <RotateCcw className="w-4 h-4" />
           </motion.button>
         </div>
 

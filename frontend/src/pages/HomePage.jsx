@@ -26,7 +26,7 @@ const staggerContainer = {
   }
 };
 
-const Hero = ({ isDarkMode, navigate, isGuestMode }) => {
+const Hero = ({ isDarkMode, navigate, isGuestMode, continueAsGuest }) => {
   return (
     <section className={`pt-32 pb-16 bg-gradient-to-br ${isDarkMode ? 'from-gray-900 via-gray-800 to-indigo-900' : 'from-indigo-50 via-white to-indigo-100'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -50,28 +50,10 @@ const Hero = ({ isDarkMode, navigate, isGuestMode }) => {
           </motion.p>
 
           <motion.div
-            className="flex flex-col sm:flex-row justify-center gap-4 mb-16"
             variants={fadeIn}
+            className="mt-12"
           >
-            <motion.button
-              className={`bg-gradient-to-r ${isDarkMode ? 'from-purple-500 to-indigo-600' : 'from-indigo-500 to-purple-600'} text-white font-medium py-4 px-8 rounded-lg shadow-lg hover:shadow-xl transition duration-300 flex items-center justify-center space-x-2 text-lg`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/workout')}
-            >
-              <span>{isGuestMode ? 'Continue Training' : 'Start Training'}</span>
-              <ArrowRight size={20} />
-            </motion.button>
-
-            <motion.button
-              className={`bg-transparent ${isDarkMode ? 'hover:bg-white/10 text-white border-white/30' : 'hover:bg-indigo-50 text-indigo-600 border-indigo-200'} font-medium py-4 px-8 rounded-lg border-2 transition duration-300 flex items-center justify-center space-x-2 text-lg`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => window.open('https://youtu.be/b1T-nO1Q60M', '_blank')}
-            >
-              <Play size={20} />
-              <span>Watch Demo</span>
-            </motion.button>
+            <WorkoutShowcase isDarkMode={isDarkMode} navigate={navigate} continueAsGuest={continueAsGuest} />
           </motion.div>
         </motion.div>
       </div>
@@ -79,40 +61,6 @@ const Hero = ({ isDarkMode, navigate, isGuestMode }) => {
   );
 };
 
-const LiveDemo = ({ isDarkMode }) => {
-  return (
-    <section id="demo" className={`py-24 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={staggerContainer}
-        >
-          <motion.h2
-            className={`text-4xl md:text-5xl font-bold text-center ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-4`}
-            variants={fadeIn}
-          >
-            See It In Action
-          </motion.h2>
-
-          <motion.p
-            className={`text-lg md:text-xl text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} max-w-3xl mx-auto mb-16`}
-            variants={fadeIn}
-          >
-            Watch our AI analyze form in real-time and provide instant corrections
-          </motion.p>
-
-          <motion.div
-            variants={fadeIn}
-          >
-            <WorkoutShowcase isDarkMode={isDarkMode} />
-          </motion.div>
-        </motion.div>
-      </div>
-    </section>
-  );
-};
 
 const FeatureHighlights = ({ isDarkMode }) => {
   const highlights = [
@@ -197,7 +145,7 @@ const Footer = ({ isDarkMode }) => {
 const HomePage = () => {
   const navigate = useNavigate();
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const { isGuestMode } = useAuth();
+  const { isGuestMode, continueAsGuest } = useAuth();
 
   // Check system preference on initial load
   useEffect(() => {
@@ -224,8 +172,7 @@ const HomePage = () => {
     }`}>
       <NavBar isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
       <main>
-        <Hero isDarkMode={isDarkMode} navigate={navigate} isGuestMode={isGuestMode} />
-        <LiveDemo isDarkMode={isDarkMode} />
+        <Hero isDarkMode={isDarkMode} navigate={navigate} isGuestMode={isGuestMode} continueAsGuest={continueAsGuest} />
         <FeatureHighlights isDarkMode={isDarkMode} />
       </main>
       <Footer isDarkMode={isDarkMode} />
