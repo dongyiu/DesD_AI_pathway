@@ -8,6 +8,12 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
+      host: '0.0.0.0', // Allow access from network (mobile hotspot)
+      port: 5173,
+      strictPort: false,
+      hmr: {
+        clientPort: 5173,
+      },
       proxy: {
         // Proxy API requests
         '/api': {
