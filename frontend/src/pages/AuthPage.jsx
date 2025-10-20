@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  AtSign, 
-  Lock, 
-  User, 
-  LogIn, 
+import {
+  AtSign,
+  Lock,
+  User,
+  LogIn,
   Users,
   Sun,
   Moon,
@@ -12,7 +12,8 @@ import {
   ArrowLeft,
   CheckCircle,
   UserCheck,
-  CircleUser
+  CircleUser,
+  UserCircle
 } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
@@ -72,6 +73,11 @@ const AuthPage = () => {
   useEffect(() => {
     if (user.user) navigate('/');
   }, [user.user, navigate]);
+
+  const handleGuestMode = () => {
+    user.continueAsGuest();
+    navigate('/workout');
+  };
 
   // Reset errors when switching between login and signup
   useEffect(() => {
@@ -518,17 +524,35 @@ const AuthPage = () => {
               </motion.button>
             </form>
 
-            <div className="mt-6 text-center">
-              <button
-                onClick={() => setIsLogin(!isLogin)}
-                className={`text-sm font-medium ${
-                  isDarkMode 
-                    ? 'text-purple-400 hover:text-purple-300' 
-                    : 'text-indigo-600 hover:text-indigo-800'
-                } transition-colors duration-300`}
+            <div className="mt-6 space-y-4">
+              {/* Guest Mode Button */}
+              <motion.button
+                onClick={handleGuestMode}
+                className={`w-full py-3 px-4 rounded-lg ${
+                  isDarkMode
+                    ? 'bg-gray-700/70 hover:bg-gray-600/80 text-white border border-gray-600'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300'
+                } transition-all duration-300 flex items-center justify-center font-medium`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                {isLogin ? 'Need an account? Sign up' : 'Already have an account? Login'}
-              </button>
+                <UserCircle className="w-5 h-5 mr-2" />
+                Continue as Guest
+              </motion.button>
+
+              {/* Toggle between Login/Signup */}
+              <div className="text-center">
+                <button
+                  onClick={() => setIsLogin(!isLogin)}
+                  className={`text-sm font-medium ${
+                    isDarkMode
+                      ? 'text-purple-400 hover:text-purple-300'
+                      : 'text-indigo-600 hover:text-indigo-800'
+                  } transition-colors duration-300`}
+                >
+                  {isLogin ? 'Need an account? Sign up' : 'Already have an account? Login'}
+                </button>
+              </div>
             </div>
           </div>
         </motion.div>
