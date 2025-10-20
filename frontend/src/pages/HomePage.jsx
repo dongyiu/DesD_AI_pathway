@@ -36,14 +36,14 @@ const Hero = ({ isDarkMode, navigate, isGuestMode, continueAsGuest }) => {
           variants={staggerContainer}
         >
           <motion.h1
-            className={`text-5xl sm:text-6xl md:text-7xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-6 leading-tight`}
+            className={`text-3xl sm:text-5xl md:text-7xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-4 md:mb-6 leading-tight`}
             variants={fadeIn}
           >
             AI-Powered <span className={`${isDarkMode ? 'text-purple-400' : 'text-indigo-600'}`}>Form Correction</span>
           </motion.h1>
 
           <motion.p
-            className={`text-xl md:text-2xl ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} max-w-3xl mx-auto mb-10 leading-relaxed`}
+            className={`text-base sm:text-lg md:text-2xl ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} max-w-3xl mx-auto mb-6 md:mb-10 leading-relaxed px-4`}
             variants={fadeIn}
           >
             Real-time workout tracking with AI-powered pose detection and instant feedback
@@ -113,28 +113,28 @@ const FeatureHighlights = ({ isDarkMode }) => {
 
 const Footer = ({ isDarkMode }) => {
   return (
-    <footer className={`${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-900 text-white'} py-12`}>
+    <footer className={`${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-900 text-white'} py-8 sm:py-12`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row justify-between items-center">
-          <div className="mb-4 md:mb-0">
-            <h3 className="text-xl font-semibold mb-2">GymTracker</h3>
-            <p className="text-gray-400">AI-Powered Fitness Training</p>
+        <div className="flex flex-col items-center space-y-4 sm:space-y-0 sm:flex-row sm:justify-between">
+          <div className="text-center sm:text-left">
+            <h3 className="text-lg sm:text-xl font-semibold mb-1 sm:mb-2">GymTracker</h3>
+            <p className="text-sm sm:text-base text-gray-400">AI-Powered Fitness Training</p>
           </div>
 
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center">
             <a
               href="https://github.com/dongyiu/DesD_AI_pathway"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center space-x-2 text-gray-400 hover:text-purple-400 transition"
             >
-              <Github className="w-5 h-5" />
-              <span>Open Source</span>
+              <Github className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="text-sm sm:text-base">Open Source</span>
             </a>
           </div>
         </div>
 
-        <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-400 text-sm">
+        <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-gray-800 text-center text-gray-400 text-xs sm:text-sm">
           <p>&copy; 2025 GymTracker. All rights reserved.</p>
         </div>
       </div>
