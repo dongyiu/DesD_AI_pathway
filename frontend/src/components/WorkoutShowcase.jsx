@@ -205,7 +205,7 @@ const WorkoutShowcase = ({ isDarkMode = false, navigate, continueAsGuest }) => {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       timeout: 10000,
-      transports: ['websocket'],
+      transports: ['polling', 'websocket'],
       auth: { guest: true }
     });
 
