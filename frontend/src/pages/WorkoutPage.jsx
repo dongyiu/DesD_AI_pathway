@@ -1219,7 +1219,7 @@ const TrainingPage = () => {
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000, 
         timeout: 10000, 
-        transports: ['websocket']
+        transports: ['polling', 'websocket'],
       };
       
       // Add auth token if available, or mark as guest

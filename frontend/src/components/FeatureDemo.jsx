@@ -225,7 +225,7 @@ const FeatureDemo = ({ exercise = 'plank', isDarkMode = false, autoPlay = true }
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       timeout: 10000,
-      transports: ['websocket'],
+      transports: ['polling', 'websocket'],
       auth: { guest: true } // Guest mode for demo
     });
 
